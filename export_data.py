@@ -289,6 +289,8 @@ class BlogDataExporter:
         
         if not docx_files:
             print(f"No .docx files found in {self.blogs_dir}")
+            # Still create empty api.json
+            self._save_api(blogs)
             return blogs
         
         for docx_file in docx_files:
