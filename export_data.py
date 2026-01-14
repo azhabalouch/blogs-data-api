@@ -306,7 +306,25 @@ class BlogDataExporter:
                 print(f"✗ Error processing {blog_title}: {str(e)}")
         
         # Sort by date (newest first)
-        blogs.sort(key=lambda x: datetime.strptime(x['date'], "%m/%d/%Y"), reverse=True)
+        def parse_date(date_str):
+            """Parse date in multiple formats: MM/DD/YYYY, DD/MM/YYYY, or with backslashes"""
+            if not date_str:
+                return datetime.now()
+            
+            # Normalize backslashes to forward slashes
+            normalized = date_str.replace('\\', '/')
+            
+            # Try MM/DD/YYYY first
+            for fmt in ["%m/%d/%Y", "%d/%m/%Y"]:
+                try:
+                    return datetime.strptime(normalized, fmt)
+                except ValueError:
+                    continue
+            
+            # If all fail, return current date
+            return datetime.now()
+        
+        blogs.sort(key=lambda x: parse_date(x['date']), reverse=True)
         
         # Save to API file
         self._save_api(blogs)
