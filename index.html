@@ -693,12 +693,88 @@
         }
 
         async function simulateUpload(formData) {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    console.log('Upload simulation complete');
-                    resolve();
-                }, 1500);
-            });
+            const config = GitHubConfig.load();
+            const blogTitle = formData.get('title');
+            const blogFile = formData.get('blog');
+            const titleImage = formData.get('titleImage');
+            const contentImages = formData.getAll('contentImages');
+            
+            const apiUrl = `https://api.github.com/repos/${config.username}/${config.repoName}/contents`;
+            const headers = {
+                'Authorization': `token ${config.token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            };
+
+            try {
+                // Upload blog DOCX file
+                const blogArrayBuffer = await blogFile.arrayBuffer();
+                const blogBase64 = btoa(String.fromCharCode.apply(null, new Uint8Array(blogArrayBuffer)));
+                
+                const blogResponse = await fetch(`${apiUrl}/blogs/${blogFile.name}`, {
+                    method: 'PUT',
+                    headers: headers,
+                    body: JSON.stringify({
+                        message: `Add blog: ${blogTitle}`,
+                        content: blogBase64,
+                        branch: config.branch
+                    })
+                });
+
+                if (!blogResponse.ok) {
+                    throw new Error(`Failed to upload blog file: ${blogResponse.statusText}`);
+                }
+
+                showMessage('uploadStatus', '✓ Blog file uploaded', 'success');
+
+                // Upload title image if provided
+                if (titleImage) {
+                    const titleImageArrayBuffer = await titleImage.arrayBuffer();
+                    const titleImageBase64 = btoa(String.fromCharCode.apply(null, new Uint8Array(titleImageArrayBuffer)));
+                    
+                    const titleImageResponse = await fetch(`${apiUrl}/images/${blogTitle}/${titleImage.name}`, {
+                        method: 'PUT',
+                        headers: headers,
+                        body: JSON.stringify({
+                            message: `Add title image for ${blogTitle}`,
+                            content: titleImageBase64,
+                            branch: config.branch
+                        })
+                    });
+
+                    if (!titleImageResponse.ok) {
+                        throw new Error(`Failed to upload title image: ${titleImageResponse.statusText}`);
+                    }
+                    
+                    showMessage('uploadStatus', '✓ Blog file and title image uploaded', 'success');
+                }
+
+                // Upload content images if provided
+                if (contentImages.length > 0) {
+                    for (const img of contentImages) {
+                        const imgArrayBuffer = await img.arrayBuffer();
+                        const imgBase64 = btoa(String.fromCharCode.apply(null, new Uint8Array(imgArrayBuffer)));
+                        
+                        const imgResponse = await fetch(`${apiUrl}/images/${blogTitle}/${img.name}`, {
+                            method: 'PUT',
+                            headers: headers,
+                            body: JSON.stringify({
+                                message: `Add content image for ${blogTitle}`,
+                                content: imgBase64,
+                                branch: config.branch
+                            })
+                        });
+
+                        if (!imgResponse.ok) {
+                            throw new Error(`Failed to upload image ${img.name}: ${imgResponse.statusText}`);
+                        }
+                    }
+                    
+                    showMessage('uploadStatus', `✓ Uploaded blog, title image, and ${contentImages.length} content image(s)`, 'success');
+                }
+
+            } catch (error) {
+                throw new Error(`GitHub upload failed: ${error.message}`);
+            }
         }
 
         // Preview Functionality
