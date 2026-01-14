@@ -752,8 +752,33 @@
                 const excerpt = extractField('Excerpt:\\s*(.+?)(?=\\n|Content:|$)') || 
                                (tempDiv.querySelector('p')?.textContent?.substring(0, 200) || '');
                 
-                // Wrap content with Times New Roman font
-                const content = `<div style="font-family: 'Times New Roman', serif;">${html}</div>`;
+                // Clean HTML: remove metadata paragraphs and wrap with font style
+                let cleanHtml = html
+                    .replace(/<p>\s*Title:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Author:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Category:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Date:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Excerpt:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Content:\s*<\/p>/gi, '')
+                    .replace(/<p>\s*FAQ:\s*<\/p>/gi, '');
+                
+                // Extract FAQ section if present
+                const faqRegex = /<h[1-6][^>]*>\s*Frequently Asked Questions\s*<\/h[1-6]>/gi;
+                const faqMatch = cleanHtml.match(faqRegex);
+                let faqContent = '';
+                
+                if (faqMatch) {
+                    const parts = cleanHtml.split(faqRegex);
+                    cleanHtml = parts[0].trim();
+                    // FAQ includes the heading + content after it
+                    faqContent = `<div style="font-family: 'Times New Roman', serif;">${faqMatch[0]}${parts[1] || ''}</div>`;
+                }
+                
+                // Trim whitespace
+                cleanHtml = cleanHtml.trim();
+                
+                // Preserve headings and formatting - wrap entire content
+                const content = `<div style="font-family: 'Times New Roman', serif;">${cleanHtml}</div>`;
                 
                 // Step 2: Create blog slug from title
                 const blogSlug = title
@@ -766,15 +791,41 @@
                     .substring(0, 200) || 'blog';
                 
                 // Step 3: Build JSON payload (matching export_data.py structure)
+                // Add featured image URL if provided
+                const featuredImageUrl = titleImage ? `https://azhabalouch.github.io/blogs-data-api/images/${blogSlug}/${titleImage.name}` : '';
+                
+                // Build content with embedded images strategically placed
+                let contentWithImages = cleanHtml;
+                if (contentImages.length > 0) {
+                    // Embed images every 2-3 paragraphs for engagement
+                    const contentParts = contentWithImages.split('</p>');
+                    const imageUrls = Array.from(contentImages).map(img => 
+                        `https://azhabalouch.github.io/blogs-data-api/images/${blogSlug}/${img.name}`
+                    );
+                    
+                    // Insert images at strategic points (after every 2nd paragraph)
+                    let imgIndex = 0;
+                    for (let i = 1; i < contentParts.length && imgIndex < imageUrls.length; i += 2) {
+                        if (contentParts[i]) {
+                            contentParts[i] += `</p><figure style="margin: 20px 0; text-align: center;"><img src="${imageUrls[imgIndex]}" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Blog image ${imgIndex + 1}"></figure>`;
+                            imgIndex++;
+                        }
+                    }
+                    contentWithImages = contentParts.join('</p>');
+                }
+                
+                // Wrap final content with font styling
+                const finalContent = `<div style="font-family: 'Times New Roman', serif;">${contentWithImages}</div>`;
+                
                 const blogData = {
-                    id: Math.abs(blogSlug.split('').reduce((a, b) => {a = ((a << 5) - a) + b.charCodeAt(0); return a & a;}, 0)) % (10 ** 8),
-                    date: date,
-                    category: category,
-                    author: author,
                     title: title,
+                    author: author,
+                    category: category,
+                    date: date,
                     excerpt: excerpt,
-                    content: content,
-                    FAQ: ''
+                    featured_image: featuredImageUrl,
+                    content: finalContent,
+                    FAQ: faqContent
                 };
                 
                 // Step 4: Upload JSON file instead of DOCX

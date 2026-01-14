@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Blog Data API Aggregator
-Reads JSON blog files from /blogs directory and generates aggregated api.json
+Reads JSON blog files from /blogs directory and aggregates them into api.json
 """
 
 import json
@@ -54,10 +54,12 @@ class BlogAggregator:
                     print(f"⊘ Already processed: {blog_slug}")
                     continue
                 
-                # Assign new ID
-                blog_data['id'] = next_id
+                # Assign new ID if not present
+                if 'id' not in blog_data or not blog_data['id']:
+                    blog_data['id'] = next_id
+                
                 blogs.append(blog_data)
-                print(f"✓ Added: {blog_slug} (ID: {next_id})")
+                print(f"✓ Added: {blog_slug} (ID: {blog_data['id']})")
                 next_id += 1
                 
             except json.JSONDecodeError as e:
