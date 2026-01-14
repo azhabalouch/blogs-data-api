@@ -765,20 +765,28 @@
                 // Extract FAQ section if present
                 const faqRegex = /<h[1-6][^>]*>\s*Frequently Asked Questions\s*<\/h[1-6]>/gi;
                 const faqMatch = cleanHtml.match(faqRegex);
-                let faqContent = '';
+                let faqArray = [];
                 
                 if (faqMatch) {
                     const parts = cleanHtml.split(faqRegex);
                     cleanHtml = parts[0].trim();
-                    // FAQ includes the heading + content after it
-                    faqContent = `<div style="font-family: 'Times New Roman', serif;">${faqMatch[0]}${parts[1] || ''}</div>`;
+                    
+                    // Parse FAQ content into Q&A array
+                    const faqHtml = parts[1] || '';
+                    const paragraphs = faqHtml.match(/<p[^>]*>.*?<\/p>/gi) || [];
+                    
+                    for (let i = 0; i < paragraphs.length; i += 2) {
+                        const question = paragraphs[i]?.replace(/<[^>]+>/g, '').trim();
+                        const answer = paragraphs[i + 1]?.replace(/<[^>]+>/g, '').trim();
+                        
+                        if (question && answer) {
+                            faqArray.push({ question, answer });
+                        }
+                    }
                 }
                 
                 // Trim whitespace
                 cleanHtml = cleanHtml.trim();
-                
-                // Preserve headings and formatting - wrap entire content
-                const content = `<div style="font-family: 'Times New Roman', serif;">${cleanHtml}</div>`;
                 
                 // Step 2: Create blog slug from title
                 const blogSlug = title
@@ -794,28 +802,10 @@
                 // Add featured image URL if provided
                 const featuredImageUrl = titleImage ? `https://azhabalouch.github.io/blogs-data-api/images/${blogSlug}/${titleImage.name}` : '';
                 
-                // Build content with embedded images strategically placed
-                let contentWithImages = cleanHtml;
-                if (contentImages.length > 0) {
-                    // Embed images every 2-3 paragraphs for engagement
-                    const contentParts = contentWithImages.split('</p>');
-                    const imageUrls = Array.from(contentImages).map(img => 
-                        `https://azhabalouch.github.io/blogs-data-api/images/${blogSlug}/${img.name}`
-                    );
-                    
-                    // Insert images at strategic points (after every 2nd paragraph)
-                    let imgIndex = 0;
-                    for (let i = 1; i < contentParts.length && imgIndex < imageUrls.length; i += 2) {
-                        if (contentParts[i]) {
-                            contentParts[i] += `</p><figure style="margin: 20px 0; text-align: center;"><img src="${imageUrls[imgIndex]}" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Blog image ${imgIndex + 1}"></figure>`;
-                            imgIndex++;
-                        }
-                    }
-                    contentWithImages = contentParts.join('</p>');
-                }
-                
-                // Wrap final content with font styling
-                const finalContent = `<div style="font-family: 'Times New Roman', serif;">${contentWithImages}</div>`;
+                // Add content images URLs
+                const contentImageUrls = Array.from(contentImages).map(img => 
+                    `https://azhabalouch.github.io/blogs-data-api/images/${blogSlug}/${img.name}`
+                );
                 
                 const blogData = {
                     title: title,
@@ -824,8 +814,9 @@
                     date: date,
                     excerpt: excerpt,
                     featured_image: featuredImageUrl,
-                    content: finalContent,
-                    FAQ: faqContent
+                    content_images: contentImageUrls,
+                    content: `<div style="font-family: 'Times New Roman', serif;">${cleanHtml}</div>`,
+                    faq: faqArray
                 };
                 
                 // Step 4: Upload JSON file instead of DOCX
