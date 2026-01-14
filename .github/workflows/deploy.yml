@@ -1,0 +1,88 @@
+name: Deploy Blog Data API
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'blogs/**'
+      - 'images/**'
+      - 'export_data.py'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install python-docx
+
+      - name: Run blog export script
+        run: |
+          python export_data.py
+          echo "Blog export completed successfully"
+
+      - name: Verify API generation
+        run: |
+          if [ -f "api.json" ]; then
+            echo "✓ API file generated"
+            python -m json.tool api.json > /dev/null && echo "✓ API JSON is valid"
+          else
+            echo "✗ API file not found"
+            exit 1
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          if [ -n "$(git status --porcelain)" ]; then
+            git add api.json
+            git commit -m "chore: update API data [skip ci]"
+            git push origin main
+            echo "✓ Changes committed and pushed"
+          else
+            echo "ℹ No changes to commit"
+          fi
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          cname: ''
+
+      - name: Deployment Summary
+        run: |
+          echo "╔════════════════════════════════════════╗"
+          echo "║    Blog Data API - Deployment Summary   ║"
+          echo "╚════════════════════════════════════════╝"
+          echo "✓ Python dependencies installed"
+          echo "✓ Blog data processed"
+          echo "✓ API JSON generated"
+          echo "✓ Changes committed"
+          echo "✓ Deployed to GitHub Pages"
+          echo ""
+          echo "Access your API at:"
+          echo "https://azhabalouch.github.io/blogs-data-api/api.json"

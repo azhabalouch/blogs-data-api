@@ -1,0 +1,68 @@
+# .gitignore - Blog Data API
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Environment variables (if using .env files)
+.env
+.env.local
+
+# API files (optional - uncomment if you want to regenerate)
+# api.json
+
+# Node modules (if using npm for frontend tools)
+node_modules/
+npm-debug.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Sensitive files
+*.key
+*.pem
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
