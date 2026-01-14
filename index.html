@@ -694,7 +694,6 @@
 
         async function simulateUpload(formData) {
             const config = GitHubConfig.load();
-            const blogTitle = formData.get('title');
             const blogFile = formData.get('blog');
             const titleImage = formData.get('titleImage');
             const contentImages = formData.getAll('contentImages');
@@ -715,37 +714,101 @@
                 return btoa(binary);
             }
 
+            // Helper function to convert UTF-8 string to base64
+            function stringToBase64(str) {
+                const bytes = new TextEncoder().encode(str);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binary);
+            }
+
             try {
-                // Upload blog DOCX file
-                const blogArrayBuffer = await blogFile.arrayBuffer();
-                const blogBase64 = arrayBufferToBase64(blogArrayBuffer);
+                // Step 1: Parse DOCX file and extract content
+                showMessage('uploadStatus', '📄 Parsing DOCX file...', 'info');
+                const arrayBuffer = await blogFile.arrayBuffer();
+                const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
+                const html = result.value;
                 
-                const blogResponse = await fetch(`${apiUrl}/blogs/${blogFile.name}`, {
+                // Extract metadata from DOCX
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const fullText = tempDiv.textContent;
+                
+                // Extract fields using regex
+                const extractField = (pattern) => {
+                    const regex = new RegExp(pattern, 'i');
+                    const match = fullText.match(regex);
+                    return match ? match[1].trim() : '';
+                };
+                
+                const title = extractField('Title:\\s*(.+?)(?=\\n|Author:|$)') || 
+                             (tempDiv.querySelector('h1')?.textContent || 'Untitled');
+                const author = extractField('Author:\\s*(.+?)(?=\\n|Category:|$)') || 'Unknown';
+                const category = extractField('Category:\\s*(.+?)(?=\\n|Date:|$)') || 'General';
+                const date = extractField('Date:\\s*(.+?)(?=\\n|Excerpt:|$)').replace(/\\\\/g, '/') || 
+                            new Date().toLocaleDateString('en-US', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\//g, '/');
+                const excerpt = extractField('Excerpt:\\s*(.+?)(?=\\n|Content:|$)') || 
+                               (tempDiv.querySelector('p')?.textContent?.substring(0, 200) || '');
+                
+                // Wrap content with Times New Roman font
+                const content = `<div style="font-family: 'Times New Roman', serif;">${html}</div>`;
+                
+                // Step 2: Create blog slug from title
+                const blogSlug = title
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    .substring(0, 200) || 'blog';
+                
+                // Step 3: Build JSON payload (matching export_data.py structure)
+                const blogData = {
+                    id: Math.abs(blogSlug.split('').reduce((a, b) => {a = ((a << 5) - a) + b.charCodeAt(0); return a & a;}, 0)) % (10 ** 8),
+                    date: date,
+                    category: category,
+                    author: author,
+                    title: title,
+                    excerpt: excerpt,
+                    content: content,
+                    FAQ: ''
+                };
+                
+                // Step 4: Upload JSON file instead of DOCX
+                showMessage('uploadStatus', '📤 Uploading blog content...', 'info');
+                const jsonPayload = JSON.stringify(blogData, null, 2);
+                const jsonBase64 = stringToBase64(jsonPayload);
+                
+                const blogResponse = await fetch(`${apiUrl}/blogs/${blogSlug}.json`, {
                     method: 'PUT',
                     headers: headers,
                     body: JSON.stringify({
-                        message: `Add blog: ${blogTitle}`,
-                        content: blogBase64,
+                        message: `Add/update blog: ${title}`,
+                        content: jsonBase64,
                         branch: config.branch
                     })
                 });
 
                 if (!blogResponse.ok) {
-                    throw new Error(`Failed to upload blog file: ${blogResponse.statusText}`);
+                    throw new Error(`Failed to upload blog: ${blogResponse.statusText}`);
                 }
 
-                showMessage('uploadStatus', '✓ Blog file uploaded', 'success');
+                showMessage('uploadStatus', '✓ Blog content uploaded', 'success');
 
-                // Upload title image if provided
+                // Step 5: Upload title image if provided
                 if (titleImage) {
+                    showMessage('uploadStatus', '🖼️ Uploading title image...', 'info');
                     const titleImageArrayBuffer = await titleImage.arrayBuffer();
                     const titleImageBase64 = arrayBufferToBase64(titleImageArrayBuffer);
                     
-                    const titleImageResponse = await fetch(`${apiUrl}/images/${blogTitle}/${titleImage.name}`, {
+                    const titleImageResponse = await fetch(`${apiUrl}/images/${blogSlug}/${titleImage.name}`, {
                         method: 'PUT',
                         headers: headers,
                         body: JSON.stringify({
-                            message: `Add title image for ${blogTitle}`,
+                            message: `Add title image for ${title}`,
                             content: titleImageBase64,
                             branch: config.branch
                         })
@@ -755,20 +818,21 @@
                         throw new Error(`Failed to upload title image: ${titleImageResponse.statusText}`);
                     }
                     
-                    showMessage('uploadStatus', '✓ Blog file and title image uploaded', 'success');
+                    showMessage('uploadStatus', '✓ Blog and title image uploaded', 'success');
                 }
 
-                // Upload content images if provided
+                // Step 6: Upload content images if provided
                 if (contentImages.length > 0) {
+                    showMessage('uploadStatus', `🖼️ Uploading ${contentImages.length} content image(s)...`, 'info');
                     for (const img of contentImages) {
                         const imgArrayBuffer = await img.arrayBuffer();
                         const imgBase64 = arrayBufferToBase64(imgArrayBuffer);
                         
-                        const imgResponse = await fetch(`${apiUrl}/images/${blogTitle}/${img.name}`, {
+                        const imgResponse = await fetch(`${apiUrl}/images/${blogSlug}/${img.name}`, {
                             method: 'PUT',
                             headers: headers,
                             body: JSON.stringify({
-                                message: `Add content image for ${blogTitle}`,
+                                message: `Add content image for ${title}`,
                                 content: imgBase64,
                                 branch: config.branch
                             })
@@ -779,11 +843,13 @@
                         }
                     }
                     
-                    showMessage('uploadStatus', `✓ Uploaded blog, title image, and ${contentImages.length} content image(s)`, 'success');
+                    showMessage('uploadStatus', `✓ Blog, images uploaded. GitHub Actions will update API.`, 'success');
+                } else {
+                    showMessage('uploadStatus', `✓ Blog uploaded. GitHub Actions will update API.`, 'success');
                 }
 
             } catch (error) {
-                throw new Error(`GitHub upload failed: ${error.message}`);
+                throw new Error(`Upload failed: ${error.message}`);
             }
         }
 
