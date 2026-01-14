@@ -23,6 +23,7 @@ class BlogAggregator:
         # Load existing blogs
         blogs = self._load_existing_blogs()
         existing_ids = {blog['id'] for blog in blogs}
+        existing_slugs = {blog.get('slug') for blog in blogs if 'slug' in blog}
         next_id = max(existing_ids) + 1 if existing_ids else 1
         
         if not self.blogs_dir.exists():
@@ -49,14 +50,17 @@ class BlogAggregator:
                     print(f"⚠️  Skipping {blog_slug}: Missing required fields")
                     continue
                 
-                # Skip if already processed
-                if blog_data.get('id') in existing_ids:
+                # Skip if already processed (by slug or ID)
+                if blog_slug in existing_slugs or blog_data.get('id') in existing_ids:
                     print(f"⊘ Already processed: {blog_slug}")
                     continue
                 
                 # Assign new ID if not present
                 if 'id' not in blog_data or not blog_data['id']:
                     blog_data['id'] = next_id
+                
+                # Store slug for duplicate detection
+                blog_data['slug'] = blog_slug
                 
                 blogs.append(blog_data)
                 print(f"✓ Added: {blog_slug} (ID: {blog_data['id']})")
