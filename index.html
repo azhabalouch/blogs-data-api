@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blog Upload - Simple</title>
+    <title>Blog Data API - Admin Interface</title>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
     <style>
         * {
@@ -11,220 +11,556 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
         }
+
         .container {
-            max-width: 800px;
-            margin: 0 auto;
             background: white;
             border-radius: 12px;
-            padding: 40px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
         }
-        h1 {
-            color: #667eea;
-            margin-bottom: 30px;
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
         }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
         .section {
-            margin-bottom: 30px;
-            padding-bottom: 30px;
-            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 40px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid #eee;
         }
+
         .section:last-child {
             border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
         }
-        h2 {
-            color: #333;
+
+        .section h2 {
+            font-size: 1.3em;
             margin-bottom: 20px;
-            font-size: 1.2em;
+            color: #333;
+            display: flex;
+            align-items: center;
         }
+
+        .section h2::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin-right: 12px;
+            border-radius: 2px;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
+
         label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #555;
+            color: #333;
+            font-size: 0.95em;
         }
+
         input[type="text"],
-        input[type="password"] {
+        input[type="password"],
+        input[type="email"],
+        input[type="date"],
+        textarea,
+        select {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid #e1e4e8;
             border-radius: 6px;
-            font-size: 14px;
+            font-family: inherit;
+            font-size: 1em;
+            transition: border-color 0.3s;
         }
+
         input[type="text"]:focus,
-        input[type="password"]:focus {
+        input[type="password"]:focus,
+        input[type="email"]:focus,
+        input[type="date"]:focus,
+        textarea:focus,
+        select:focus {
             outline: none;
             border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
         .file-input-wrapper {
             position: relative;
-            margin-bottom: 15px;
+            display: inline-block;
+            width: 100%;
         }
-        .file-label {
+
+        .file-input-label {
             display: block;
-            padding: 20px;
-            background: #f9f9ff;
+            padding: 12px;
+            background: #f5f5f5;
             border: 2px dashed #667eea;
-            border-radius: 8px;
-            text-align: center;
+            border-radius: 6px;
             cursor: pointer;
+            text-align: center;
             transition: all 0.3s;
+            color: #667eea;
+            font-weight: 600;
         }
-        .file-label:hover {
-            background: #f0f7ff;
+
+        .file-input-label:hover {
+            background: #f9f9ff;
         }
+
         input[type="file"] {
             display: none;
         }
+
         .file-name {
             margin-top: 8px;
-            font-size: 14px;
-            color: #667eea;
+            color: #666;
+            font-size: 0.9em;
         }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
         button {
-            padding: 12px 30px;
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 600;
             border: none;
             border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
+            flex: 1;
+            min-width: 120px;
         }
+
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-        .btn-primary:hover:not(:disabled) {
+
+        .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
-        .btn-primary:disabled {
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #efefef;
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff5252;
+        }
+
+        .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
-            margin-right: 10px;
-        }
+
         .status-message {
-            padding: 15px;
+            padding: 14px;
             border-radius: 6px;
             margin-bottom: 20px;
             display: none;
         }
-        .status-message.show {
-            display: block;
-        }
+
         .status-message.success {
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
+            display: block;
         }
+
         .status-message.error {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
+            display: block;
         }
+
         .status-message.info {
             background: #d1ecf1;
             color: #0c5460;
             border: 1px solid #bee5eb;
+            display: block;
         }
-        .preview-box {
+
+        .preview-section {
             background: #f9f9f9;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
             padding: 20px;
-            border-radius: 8px;
+            margin-top: 20px;
             max-height: 500px;
             overflow-y: auto;
+        }
+
+        .preview-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .preview-content {
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .preview-content h1,
+        .preview-content h2,
+        .preview-content h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .preview-content p {
+            margin-bottom: 10px;
+        }
+
+        .config-saved {
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            color: #155724;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e1e4e8;
+            margin-bottom: 30px;
+            gap: 0;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            flex: 0;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #0066cc;
+        }
+
+        @media (max-width: 600px) {
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📝 Simple Blog Uploader</h1>
-        
-        <!-- GitHub Config Section -->
-        <div class="section">
-            <h2>⚙️ GitHub Configuration</h2>
-            <div id="configStatus" class="status-message"></div>
-            <div class="form-group">
-                <label>GitHub Username</label>
-                <input type="text" id="githubUsername" placeholder="e.g., azhabalouch">
-            </div>
-            <div class="form-group">
-                <label>Repository Name</label>
-                <input type="text" id="repoName" placeholder="e.g., blogs-data-api">
-            </div>
-            <div class="form-group">
-                <label>Branch</label>
-                <input type="text" id="branchName" value="main">
-            </div>
-            <div class="form-group">
-                <label>GitHub Token (PAT)</label>
-                <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-            </div>
-            <button class="btn-secondary" onclick="saveConfig()">💾 Save Config</button>
-            <button class="btn-secondary" onclick="testConnection()">🔗 Test Connection</button>
+        <div class="header">
+            <h1>📝 Blog Data API</h1>
+            <p>Admin Interface for Blog Management & GitHub Integration</p>
         </div>
 
-        <!-- Upload Section -->
-        <div class="section">
-            <h2>📤 Upload Blog (3 Files)</h2>
-            <div id="uploadStatus" class="status-message"></div>
-            
-            <div class="file-input-wrapper">
-                <label class="file-label" for="blogFile">
-                    📄 DOCX File (will convert to JSON)
-                </label>
-                <input type="file" id="blogFile" accept=".docx" onchange="handleFileSelect(this)">
-                <div class="file-name" id="blogFileName"></div>
+        <div class="content">
+            <div class="tabs">
+                <button class="tab-button active" data-tab="blog-upload">Blog Upload</button>
+                <button class="tab-button" data-tab="github-config">GitHub Config</button>
+                <button class="tab-button" data-tab="preview">Preview</button>
             </div>
 
-            <div class="file-input-wrapper">
-                <label class="file-label" for="image1">
-                    🖼️ Image 1
-                </label>
-                <input type="file" id="image1" accept="image/*" onchange="handleFileSelect(this)">
-                <div class="file-name" id="image1Name"></div>
+            <!-- Blog Upload Tab -->
+            <div id="blog-upload" class="tab-content active">
+                <div class="section">
+                    <h2>Blog Upload</h2>
+                    <div id="uploadStatus" class="status-message"></div>
+
+                    <div class="form-group">
+                        <label>Blog Document (.docx)</label>
+                        <div class="file-input-wrapper">
+                            <label for="blogFile" class="file-input-label">
+                                📄 Click to upload or drag & drop
+                            </label>
+                            <input type="file" id="blogFile" accept=".docx">
+                            <div class="file-name" id="blogFileName"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Title Image (.jpg, .png, .gif)</label>
+                        <div class="file-input-wrapper">
+                            <label for="titleImage" class="file-input-label">
+                                🖼️ Click to upload or drag & drop
+                            </label>
+                            <input type="file" id="titleImage" accept="image/*">
+                            <div class="file-name" id="titleImageName"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Content Images (Multiple)</label>
+                        <div class="file-input-wrapper">
+                            <label for="contentImages" class="file-input-label">
+                                🖼️ Click to upload or drag & drop
+                            </label>
+                            <input type="file" id="contentImages" accept="image/*" multiple>
+                            <div class="file-name" id="contentImagesName"></div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" id="uploadBtn" disabled>🚀 Upload & Deploy</button>
+                        <button class="btn-secondary" id="previewBtn" disabled>👁️ Preview</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="file-input-wrapper">
-                <label class="file-label" for="image2">
-                    🖼️ Image 2
-                </label>
-                <input type="file" id="image2" accept="image/*" onchange="handleFileSelect(this)">
-                <div class="file-name" id="image2Name"></div>
+            <!-- GitHub Config Tab -->
+            <div id="github-config" class="tab-content">
+                <div class="section">
+                    <h2>GitHub Configuration</h2>
+                    
+                    <div class="info-box">
+                        ℹ️ Your credentials are stored securely in browser LocalStorage. You can clear them at any time.
+                    </div>
+
+                    <div id="configStatus" class="status-message"></div>
+
+                    <div class="form-group">
+                        <label>GitHub Username</label>
+                        <input type="text" id="githubUsername" placeholder="e.g., azhabalouch">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Repository Name</label>
+                        <input type="text" id="repoName" placeholder="e.g., blogs-data-api">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Branch Name</label>
+                        <input type="text" id="branchName" placeholder="e.g., main" value="main">
+                    </div>
+
+                    <div class="form-group">
+                        <label>GitHub Personal Access Token (PAT)</label>
+                        <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                        <small style="color: #666; margin-top: 5px; display: block;">
+                            Generate at: <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a>
+                        </small>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" id="saveConfigBtn">✓ Save Configuration</button>
+                        <button class="btn-secondary" id="testConnectionBtn">🔗 Test Connection</button>
+                        <button class="btn-danger" id="clearConfigBtn">🗑️ Clear Credentials</button>
+                    </div>
+
+                    <div id="configSavedMsg" class="config-saved" style="display: none;">
+                        ✓ Configuration saved successfully
+                    </div>
+                </div>
             </div>
 
-            <button class="btn-secondary" onclick="previewBlog()">👁️ Preview</button>
-            <button class="btn-primary" id="uploadBtn" onclick="uploadAll()" disabled>🚀 Upload 3 Files</button>
-        </div>
-
-        <!-- Preview Section -->
-        <div class="section">
-            <h2>👁️ Preview</h2>
-            <div class="preview-box" id="previewBox">
-                <p style="color: #999; text-align: center;">Select a DOCX file and click Preview</p>
+            <!-- Preview Tab -->
+            <div id="preview" class="tab-content">
+                <div class="section">
+                    <h2>Preview</h2>
+                    <div class="preview-section" id="previewContent">
+                        <p style="color: #999; text-align: center;">Upload a blog document to see preview</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // GitHub Config Management
-        const GitHubConfig = {
-            save: (config) => localStorage.setItem('githubConfig', JSON.stringify(config)),
-            load: () => JSON.parse(localStorage.getItem('githubConfig') || '{}'),
-            clear: () => localStorage.removeItem('githubConfig')
-        };
+        // Configuration Management
+        const CONFIG_KEY = 'blogApiConfig';
+
+        class GitHubConfig {
+            static load() {
+                const saved = localStorage.getItem(CONFIG_KEY);
+                return saved ? JSON.parse(saved) : {};
+            }
+
+            static save(config) {
+                localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+            }
+
+            static clear() {
+                localStorage.removeItem(CONFIG_KEY);
+            }
+        }
+
+        // File Upload Handlers
+        function setupFileInputs() {
+            const inputs = ['blogFile', 'titleImage', 'contentImages'];
+            
+            inputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                setupDragDrop(input);
+                input.addEventListener('change', handleFileSelect);
+            });
+        }
+
+        function setupDragDrop(input) {
+            const label = input.previousElementSibling;
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                label.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            label.addEventListener('dragover', () => {
+                label.style.background = '#f0f7ff';
+            });
+
+            label.addEventListener('dragleave', () => {
+                label.style.background = '#f9f9ff';
+            });
+
+            label.addEventListener('drop', (e) => {
+                label.style.background = '#f9f9ff';
+                const dt = e.dataTransfer;
+                input.files = dt.files;
+                handleFileSelect({ target: input });
+            });
+        }
+
+        function handleFileSelect(e) {
+            const input = e.target;
+            const fileNameEl = document.getElementById(input.id + 'Name');
+            
+            if (input.files.length) {
+                const fileNames = Array.from(input.files).map(f => f.name).join(', ');
+                fileNameEl.textContent = `Selected: ${fileNames}`;
+            } else {
+                fileNameEl.textContent = '';
+            }
+
+            updateUploadButtonState();
+        }
+
+        function updateUploadButtonState() {
+            const blogFile = document.getElementById('blogFile').files.length > 0;
+            document.getElementById('uploadBtn').disabled = !blogFile;
+            document.getElementById('previewBtn').disabled = !blogFile;
+        }
+
+        // Tab Navigation
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                btn.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // GitHub Configuration
+        document.getElementById('saveConfigBtn').addEventListener('click', saveConfig);
+        document.getElementById('testConnectionBtn').addEventListener('click', testConnection);
+        document.getElementById('clearConfigBtn').addEventListener('click', clearConfig);
 
         function loadConfig() {
             const config = GitHubConfig.load();
@@ -248,210 +584,433 @@
             }
 
             GitHubConfig.save(config);
-            showMessage('configStatus', '✓ Configuration saved', 'success');
+            showMessage('configStatus', 'Configuration saved successfully', 'success');
+            document.getElementById('configSavedMsg').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('configSavedMsg').style.display = 'none';
+            }, 3000);
         }
 
         async function testConnection() {
             const config = GitHubConfig.load();
-            if (!config.token) {
-                showMessage('configStatus', 'Save configuration first', 'error');
+            
+            if (!config.username || !config.token) {
+                showMessage('configStatus', 'Please save configuration first', 'error');
                 return;
             }
 
+            const btn = document.getElementById('testConnectionBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Testing...';
+
             try {
                 const response = await fetch('https://api.github.com/user', {
-                    headers: { 'Authorization': `token ${config.token}` }
+                    headers: {
+                        'Authorization': `token ${config.token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
                 });
 
                 if (response.ok) {
                     showMessage('configStatus', '✓ Connection successful!', 'success');
                 } else {
-                    showMessage('configStatus', '✗ Authentication failed', 'error');
+                    showMessage('configStatus', '✗ Authentication failed. Check your token.', 'error');
                 }
             } catch (error) {
-                showMessage('configStatus', `✗ Error: ${error.message}`, 'error');
+                showMessage('configStatus', `✗ Connection error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔗 Test Connection';
             }
         }
 
-        function handleFileSelect(input) {
-            const fileNameEl = document.getElementById(input.id + 'Name');
-            if (input.files.length > 0) {
-                fileNameEl.textContent = `Selected: ${input.files[0].name}`;
-            } else {
-                fileNameEl.textContent = '';
-            }
-            updateUploadButton();
-        }
-
-        function updateUploadButton() {
-            const blogFile = document.getElementById('blogFile').files.length > 0;
-            document.getElementById('uploadBtn').disabled = !blogFile;
-        }
-
-        async function previewBlog() {
-            const blogFile = document.getElementById('blogFile').files[0];
-            if (!blogFile) {
-                showMessage('uploadStatus', 'Select a DOCX file first', 'error');
-                return;
-            }
-
-            const previewBox = document.getElementById('previewBox');
-            previewBox.innerHTML = '<p style="text-align:center;">⏳ Loading...</p>';
-
-            try {
-                const arrayBuffer = await blogFile.arrayBuffer();
-                const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
-                
-                previewBox.innerHTML = `
-                    <h3>${blogFile.name}</h3>
-                    <hr style="margin: 15px 0;">
-                    <div style="font-family: 'Times New Roman', serif; line-height: 1.6;">
-                        ${result.value}
-                    </div>
-                `;
-            } catch (error) {
-                previewBox.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        function clearConfig() {
+            if (confirm('Are you sure you want to clear all credentials?')) {
+                GitHubConfig.clear();
+                loadConfig();
+                showMessage('configStatus', 'Credentials cleared', 'info');
             }
         }
 
-        async function uploadAll() {
+        function showMessage(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `status-message ${type}`;
+        }
+
+        // Upload and Deploy
+        document.getElementById('uploadBtn').addEventListener('click', uploadAndDeploy);
+
+        async function uploadAndDeploy() {
             const config = GitHubConfig.load();
+            
             if (!config.username || !config.token) {
-                showMessage('uploadStatus', 'Configure GitHub credentials first', 'error');
+                showMessage('uploadStatus', 'Please configure GitHub credentials first', 'error');
                 return;
             }
 
             const blogFile = document.getElementById('blogFile').files[0];
-            const image1 = document.getElementById('image1').files[0];
-            const image2 = document.getElementById('image2').files[0];
-
-            if (!blogFile) {
-                showMessage('uploadStatus', 'DOCX file is required', 'error');
-                return;
-            }
+            const titleImage = document.getElementById('titleImage').files[0];
+            const contentImages = document.getElementById('contentImages').files;
 
             const btn = document.getElementById('uploadBtn');
             btn.disabled = true;
             btn.textContent = '⏳ Uploading...';
 
             try {
-                // 1. Convert DOCX to JSON
-                showMessage('uploadStatus', '📄 Converting DOCX to JSON...', 'info');
-                const arrayBuffer = await blogFile.arrayBuffer();
-                const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
-                
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = result.value;
-                const title = tempDiv.querySelector('h1')?.textContent || blogFile.name.replace('.docx', '');
-                const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                
-                const blogData = {
-                    title: title,
-                    author: "Unknown",
-                    category: "General",
-                    date: new Date().toLocaleDateString('en-US'),
-                    excerpt: tempDiv.textContent.substring(0, 200).trim(),
-                    featured_image: image1 ? `https://${config.username}.github.io/${config.repoName}/images/${image1.name}` : '',
-                    content_images: image2 ? [`https://${config.username}.github.io/${config.repoName}/images/${image2.name}`] : [],
-                    content: `<div style="font-family: 'Times New Roman', serif;">${result.value}</div>`,
-                    faq: []
-                };
+                showMessage('uploadStatus', 'Starting upload...', 'info');
 
-                // 2. Upload JSON
-                showMessage('uploadStatus', '📄 Uploading JSON (1/3)...', 'info');
-                await uploadToGitHub(
-                    `blogs/${slug}.json`,
-                    btoa(unescape(encodeURIComponent(JSON.stringify(blogData, null, 2)))),
-                    `Add blog: ${title}`,
-                    config
-                );
+                // Extract blog title from filename
+                const blogTitle = blogFile.name.replace('.docx', '');
 
-                // 3. Upload Image 1
-                if (image1) {
-                    showMessage('uploadStatus', '🖼️ Uploading image 1 (2/3)...', 'info');
-                    await uploadToGitHub(
-                        `images/${image1.name}`,
-                        await fileToBase64(image1),
-                        `Add image: ${image1.name}`,
-                        config
-                    );
-                }
+                // Prepare FormData
+                const formData = new FormData();
+                formData.append('blog', blogFile);
+                if (titleImage) formData.append('titleImage', titleImage);
+                Array.from(contentImages).forEach(img => {
+                    formData.append('contentImages', img);
+                });
+                formData.append('title', blogTitle);
+                formData.append('config', JSON.stringify(config));
 
-                // 4. Upload Image 2
-                if (image2) {
-                    showMessage('uploadStatus', '🖼️ Uploading image 2 (3/3)...', 'info');
-                    await uploadToGitHub(
-                        `images/${image2.name}`,
-                        await fileToBase64(image2),
-                        `Add image: ${image2.name}`,
-                        config
-                    );
-                }
+                // Simulate upload (in production, this would call a backend API)
+                await simulateUpload(formData);
 
-                showMessage('uploadStatus', '✅ Done! All files uploaded. GitHub Actions will rebuild api.json now.', 'success');
-                
-                // Clear files
+                showMessage('uploadStatus', '✓ Upload successful! Blog deployed to GitHub.', 'success');
                 document.getElementById('blogFile').value = '';
-                document.getElementById('image1').value = '';
-                document.getElementById('image2').value = '';
+                document.getElementById('titleImage').value = '';
+                document.getElementById('contentImages').value = '';
                 document.getElementById('blogFileName').textContent = '';
-                document.getElementById('image1Name').textContent = '';
-                document.getElementById('image2Name').textContent = '';
-                updateUploadButton();
-
+                document.getElementById('titleImageName').textContent = '';
+                document.getElementById('contentImagesName').textContent = '';
+                updateUploadButtonState();
             } catch (error) {
                 showMessage('uploadStatus', `✗ Upload failed: ${error.message}`, 'error');
             } finally {
                 btn.disabled = false;
-                btn.textContent = '🚀 Upload 3 Files';
+                btn.textContent = '🚀 Upload & Deploy';
             }
         }
 
-        async function uploadToGitHub(path, base64Content, message, config) {
-            const response = await fetch(
-                `https://api.github.com/repos/${config.username}/${config.repoName}/contents/${path}`,
-                {
+        async function simulateUpload(formData) {
+            const config = GitHubConfig.load();
+            const blogFile = formData.get('blog');
+            const titleImage = formData.get('titleImage');
+            const contentImages = formData.getAll('contentImages');
+            
+            const apiUrl = `https://api.github.com/repos/${config.username}/${config.repoName}/contents`;
+            const headers = {
+                'Authorization': `token ${config.token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            };
+
+            // Helper function to convert ArrayBuffer to base64
+            function arrayBufferToBase64(buffer) {
+                const bytes = new Uint8Array(buffer);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binary);
+            }
+
+            // Helper function to convert UTF-8 string to base64
+            function stringToBase64(str) {
+                const bytes = new TextEncoder().encode(str);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binary);
+            }
+
+            try {
+                // Step 1: Parse DOCX file and extract content
+                showMessage('uploadStatus', '📄 Parsing DOCX file...', 'info');
+                const arrayBuffer = await blogFile.arrayBuffer();
+                const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
+                const html = result.value;
+                
+                // Extract metadata from DOCX
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const fullText = tempDiv.textContent;
+                
+                // Extract fields using regex
+                const extractField = (pattern) => {
+                    const regex = new RegExp(pattern, 'i');
+                    const match = fullText.match(regex);
+                    return match ? match[1].trim() : '';
+                };
+                
+                const title = extractField('Title:\\s*(.+?)(?=\\n|Author:|$)') || 
+                             (tempDiv.querySelector('h1')?.textContent || 'Untitled');
+                const author = extractField('Author:\\s*(.+?)(?=\\n|Category:|$)') || 'Unknown';
+                const category = extractField('Category:\\s*(.+?)(?=\\n|Date:|$)') || 'General';
+                const date = extractField('Date:\\s*(.+?)(?=\\n|Excerpt:|$)').replace(/\\\\/g, '/') || 
+                            new Date().toLocaleDateString('en-US', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\//g, '/');
+                const excerpt = extractField('Excerpt:\\s*(.+?)(?=\\n|Content:|$)') || 
+                               (tempDiv.querySelector('p')?.textContent?.substring(0, 200) || '');
+                
+                // Clean HTML: remove metadata paragraphs and wrap with font style
+                let cleanHtml = html
+                    .replace(/<p>\s*Title:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Author:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Category:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Date:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Excerpt:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Content:\s*<\/p>/gi, '')
+                    .replace(/<p>\s*FAQ:\s*<\/p>/gi, '');
+                
+                // Extract FAQ section if present
+                const faqRegex = /<h[1-6][^>]*>\s*Frequently Asked Questions\s*<\/h[1-6]>/gi;
+                const faqMatch = cleanHtml.match(faqRegex);
+                let faqArray = [];
+                
+                if (faqMatch) {
+                    const parts = cleanHtml.split(faqRegex);
+                    cleanHtml = parts[0].trim();
+                    
+                    // Parse FAQ content into Q&A array
+                    const faqHtml = parts[1] || '';
+                    const paragraphs = faqHtml.match(/<p[^>]*>.*?<\/p>/gi) || [];
+                    
+                    for (let i = 0; i < paragraphs.length; i += 2) {
+                        const question = paragraphs[i]?.replace(/<[^>]+>/g, '').trim();
+                        const answer = paragraphs[i + 1]?.replace(/<[^>]+>/g, '').trim();
+                        
+                        if (question && answer) {
+                            faqArray.push({ question, answer });
+                        }
+                    }
+                }
+                
+                // Trim whitespace
+                cleanHtml = cleanHtml.trim();
+                
+                // Step 2: Create blog slug from title
+                const blogSlug = title
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    .substring(0, 200) || 'blog';
+                
+                // Step 3: Build JSON payload (matching export_data.py structure)
+                // Add featured image URL if provided
+                const featuredImageUrl = titleImage ? `https://azhabalouch.github.io/blogs-data-api/images/${blogSlug}/${titleImage.name}` : '';
+                
+                // Add content images URLs
+                const contentImageUrls = Array.from(contentImages).map(img => 
+                    `https://azhabalouch.github.io/blogs-data-api/images/${blogSlug}/${img.name}`
+                );
+                
+                const blogData = {
+                    title: title,
+                    author: author,
+                    category: category,
+                    date: date,
+                    excerpt: excerpt,
+                    featured_image: featuredImageUrl,
+                    content_images: contentImageUrls,
+                    content: `<div style="font-family: 'Times New Roman', serif;">${cleanHtml}</div>`,
+                    faq: faqArray
+                };
+                
+                // Step 4: Upload JSON file instead of DOCX
+                showMessage('uploadStatus', '📤 Uploading blog content...', 'info');
+                const jsonPayload = JSON.stringify(blogData, null, 2);
+                const jsonBase64 = stringToBase64(jsonPayload);
+                
+                const blogResponse = await fetch(`${apiUrl}/blogs/${blogSlug}.json`, {
                     method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${config.token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    },
+                    headers: headers,
                     body: JSON.stringify({
-                        message: message,
-                        content: base64Content,
+                        message: `Add/update blog: ${title}`,
+                        content: jsonBase64,
                         branch: config.branch
                     })
+                });
+
+                if (!blogResponse.ok) {
+                    throw new Error(`Failed to upload blog: ${blogResponse.statusText}`);
                 }
-            );
 
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`GitHub API error: ${response.status} - ${error}`);
+                showMessage('uploadStatus', '✓ Blog content uploaded', 'success');
+
+                // Step 5: Upload title image if provided
+                if (titleImage) {
+                    showMessage('uploadStatus', '🖼️ Uploading title image...', 'info');
+                    const titleImageArrayBuffer = await titleImage.arrayBuffer();
+                    const titleImageBase64 = arrayBufferToBase64(titleImageArrayBuffer);
+                    
+                    const titleImageResponse = await fetch(`${apiUrl}/images/${blogSlug}/${titleImage.name}`, {
+                        method: 'PUT',
+                        headers: headers,
+                        body: JSON.stringify({
+                            message: `Add title image for ${title}`,
+                            content: titleImageBase64,
+                            branch: config.branch
+                        })
+                    });
+
+                    if (!titleImageResponse.ok) {
+                        throw new Error(`Failed to upload title image: ${titleImageResponse.statusText}`);
+                    }
+                    
+                    showMessage('uploadStatus', '✓ Blog and title image uploaded', 'success');
+                }
+
+                // Step 6: Upload content images if provided
+                if (contentImages.length > 0) {
+                    showMessage('uploadStatus', `🖼️ Uploading ${contentImages.length} content image(s)...`, 'info');
+                    for (const img of contentImages) {
+                        const imgArrayBuffer = await img.arrayBuffer();
+                        const imgBase64 = arrayBufferToBase64(imgArrayBuffer);
+                        
+                        const imgResponse = await fetch(`${apiUrl}/images/${blogSlug}/${img.name}`, {
+                            method: 'PUT',
+                            headers: headers,
+                            body: JSON.stringify({
+                                message: `Add content image for ${title}`,
+                                content: imgBase64,
+                                branch: config.branch
+                            })
+                        });
+
+                        if (!imgResponse.ok) {
+                            throw new Error(`Failed to upload image ${img.name}: ${imgResponse.statusText}`);
+                        }
+                    }
+                    
+                    showMessage('uploadStatus', `✓ Blog, images uploaded. GitHub Actions will update API.`, 'success');
+                } else {
+                    showMessage('uploadStatus', `✓ Blog uploaded. GitHub Actions will update API.`, 'success');
+                }
+
+            } catch (error) {
+                throw new Error(`Upload failed: ${error.message}`);
             }
-
-            return response.json();
         }
 
-        async function fileToBase64(file) {
-            const arrayBuffer = await file.arrayBuffer();
-            const bytes = new Uint8Array(arrayBuffer);
-            let binary = '';
-            for (let i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i]);
+        // Preview Functionality
+        document.getElementById('previewBtn').addEventListener('click', async () => {
+            const tabBtn = document.querySelector('[data-tab="preview"]');
+            tabBtn.click();
+            
+            const blogFile = document.getElementById('blogFile').files[0];
+            const titleImage = document.getElementById('titleImage').files[0];
+            const contentImages = document.getElementById('contentImages').files;
+            const previewContent = document.getElementById('previewContent');
+            
+            if (!blogFile) {
+                previewContent.innerHTML = '<p style="color: #999; text-align: center;">Please select a blog file first</p>';
+                return;
             }
-            return btoa(binary);
-        }
-
-        function showMessage(elementId, message, type) {
-            const el = document.getElementById(elementId);
-            el.textContent = message;
-            el.className = `status-message show ${type}`;
-            setTimeout(() => el.classList.remove('show'), 5000);
-        }
+            
+            // Show loading
+            previewContent.innerHTML = `
+                <h3>Blog Preview</h3>
+                <div style="text-align: center; padding: 40px;">
+                    <p>⏳ Loading and parsing ${blogFile.name}...</p>
+                </div>
+            `;
+            
+            try {
+                // Read and parse DOCX file
+                const arrayBuffer = await blogFile.arrayBuffer();
+                const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
+                const html = result.value;
+                
+                // Extract basic metadata from HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                const firstHeading = tempDiv.querySelector('h1, h2, h3');
+                const title = firstHeading ? firstHeading.textContent : 'Untitled';
+                
+                // Get blog name for image URLs
+                const blogName = blogFile.name.replace('.docx', '');
+                const githubPagesUrl = 'https://azhabalouch.github.io/blogs-data-api';
+                
+                // Create title image HTML if uploaded
+                let titleImageHtml = '';
+                if (titleImage) {
+                    const titleImageUrl = URL.createObjectURL(titleImage);
+                    const futureUrl = `${githubPagesUrl}/images/${blogName}/${titleImage.name}`;
+                    titleImageHtml = `
+                        <div style="margin: 20px 0;">
+                            <img src="${titleImageUrl}" alt="Title Image" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+                            <small style="color: #666; display: block; margin-top: 5px;">Will be hosted at: ${futureUrl}</small>
+                        </div>
+                    `;
+                }
+                
+                // Create content images section if uploaded
+                let contentImagesHtml = '';
+                if (contentImages.length > 0) {
+                    const imagesList = Array.from(contentImages).map(img => {
+                        const imgUrl = URL.createObjectURL(img);
+                        const futureUrl = `${githubPagesUrl}/images/${blogName}/${img.name}`;
+                        return `
+                            <div style="margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 6px;">
+                                <img src="${imgUrl}" alt="${img.name}" style="width: 100%; border-radius: 4px;" />
+                                <small style="color: #666; display: block; margin-top: 5px;">
+                                    <strong>${img.name}</strong><br>
+                                    Will be hosted at: ${futureUrl}
+                                </small>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    contentImagesHtml = `
+                        <div style="margin: 30px 0; padding: 20px; background: #f0f7ff; border-left: 4px solid #667eea; border-radius: 4px;">
+                            <h3 style="margin-top: 0;">Content Images</h3>
+                            ${imagesList}
+                        </div>
+                    `;
+                }
+                
+                // Display preview with images
+                previewContent.innerHTML = `
+                    <h3>Blog Preview</h3>
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <strong>Note:</strong> This is how your blog will appear on the frontend with GitHub Pages URLs
+                    </div>
+                    <div class="preview-content" style="font-family: 'Times New Roman', serif; line-height: 1.6;">
+                        <h1 style="margin-bottom: 10px;">${title}</h1>
+                        <p><strong>File:</strong> ${blogFile.name}</p>
+                        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        ${titleImageHtml}
+                        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+                        <div style="font-family: 'Times New Roman', serif;">
+                            ${html}
+                        </div>
+                        ${contentImagesHtml}
+                    </div>
+                `;
+                
+                // Show any warnings
+                if (result.messages.length > 0) {
+                    console.log('Conversion warnings:', result.messages);
+                }
+            } catch (error) {
+                previewContent.innerHTML = `
+                    <h3>Blog Preview</h3>
+                    <div style="padding: 20px; color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px;">
+                        <strong>Error parsing DOCX file:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        });
 
         // Initialize
         loadConfig();
-        updateUploadButton();
+        setupFileInputs();
+        updateUploadButtonState();
     </script>
 </body>
 </html>
