@@ -415,13 +415,33 @@
                     const faqHtml = parts[1] || '';
                     const paragraphs = faqHtml.match(/<p[^>]*>.*?<\/p>/gi) || [];
                     
-                    for (let i = 0; i < paragraphs.length; i += 2) {
-                        const question = paragraphs[i]?.replace(/<[^>]+>/g, '').trim();
-                        const answer = paragraphs[i + 1]?.replace(/<[^>]+>/g, '').trim();
+                    let currentQuestion = '';
+                    let currentAnswer = '';
+                    
+                    for (const para of paragraphs) {
+                        const text = para.replace(/<[^>]+>/g, '').trim();
                         
-                        if (question && answer) {
-                            faqArray.push({ question, answer });
+                        if (text.startsWith('Q.')) {
+                            if (currentQuestion && currentAnswer) {
+                                faqArray.push({ 
+                                    question: currentQuestion.replace(/^Q\.\s*/i, '').trim(), 
+                                    answer: currentAnswer.replace(/^A\.\s*/i, '').trim() 
+                                });
+                            }
+                            currentQuestion = text;
+                            currentAnswer = '';
+                        } else if (text.startsWith('A.')) {
+                            currentAnswer = text;
+                        } else if (currentAnswer) {
+                            currentAnswer += ' ' + text;
                         }
+                    }
+                    
+                    if (currentQuestion && currentAnswer) {
+                        faqArray.push({ 
+                            question: currentQuestion.replace(/^Q\.\s*/i, '').trim(), 
+                            answer: currentAnswer.replace(/^A\.\s*/i, '').trim() 
+                        });
                     }
                 }
                 
