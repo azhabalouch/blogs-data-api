@@ -404,7 +404,7 @@
                     .replace(/<p>\s*Content:\s*<\/p>/gi, '')
                     .replace(/<p>\s*FAQ:\s*<\/p>/gi, '');
                 
-                const faqRegex = /<h[1-6][^>]*>\s*Frequently Asked Questions\s*<\/h[1-6]>/gi;
+                const faqRegex = /<[^>]+>\s*Frequently Asked Questions\s*<\/[^>]+>/gi;
                 const faqMatch = cleanHtml.match(faqRegex);
                 let faqArray = [];
                 
@@ -591,17 +591,108 @@
                 
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = html;
+                const fullText = tempDiv.textContent;
                 
-                const firstHeading = tempDiv.querySelector('h1, h2, h3');
-                const title = firstHeading ? firstHeading.textContent : 'Untitled';
+                const extractField = (pattern) => {
+                    const regex = new RegExp(pattern, 'i');
+                    const match = fullText.match(regex);
+                    return match ? match[1].trim() : '';
+                };
                 
-                const blogName = blogFile.name.replace('.docx', '');
-                const githubPagesUrl = 'https://azhabalouch.github.io/blogs-data-api';
+                const title = extractField('Title:\\s*(.+?)(?=\\n|Author:|$)') || 
+                             (tempDiv.querySelector('h1')?.textContent || 'Untitled');
+                const author = extractField('Author:\\s*(.+?)(?=\\n|Category:|$)') || 'Unknown';
+                const category = extractField('Category:\\s*(.+?)(?=\\n|Date:|$)') || 'General';
+                const date = extractField('Date:\\s*(.+?)(?=\\n|Excerpt:|$)').replace(/\\\\/g, '/') || 
+                            new Date().toLocaleDateString('en-US', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\//g, '/');
+                const excerpt = extractField('Excerpt:\\s*(.+?)(?=\\n|Content:|$)') || 
+                               (tempDiv.querySelector('p')?.textContent?.substring(0, 200) || '');
+                
+                let cleanHtml = html
+                    .replace(/<p>\s*Title:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Author:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Category:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Date:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Excerpt:\s*[^<]*<\/p>/gi, '')
+                    .replace(/<p>\s*Content:\s*<\/p>/gi, '')
+                    .replace(/<p>\s*FAQ:\s*<\/p>/gi, '');
+                
+                const faqRegex = /<[^>]+>\s*Frequently Asked Questions\s*<\/[^>]+>/gi;
+                const faqMatch = cleanHtml.match(faqRegex);
+                let faqArray = [];
+                
+                if (faqMatch) {
+                    const parts = cleanHtml.split(faqRegex);
+                    cleanHtml = parts[0].trim();
+                    
+                    const faqHtml = parts[1] || '';
+                    const paragraphs = faqHtml.match(/<p[^>]*>.*?<\/p>/gi) || [];
+                    
+                    let currentQuestion = '';
+                    let currentAnswer = '';
+                    
+                    for (const para of paragraphs) {
+                        const text = para.replace(/<[^>]+>/g, '').trim();
+                        
+                        if (text.startsWith('Q.')) {
+                            if (currentQuestion && currentAnswer) {
+                                faqArray.push({ 
+                                    question: currentQuestion.replace(/^Q\.\s*/i, '').trim(), 
+                                    answer: currentAnswer.replace(/^A\.\s*/i, '').trim() 
+                                });
+                            }
+                            currentQuestion = text;
+                            currentAnswer = '';
+                        } else if (text.startsWith('A.')) {
+                            currentAnswer = text;
+                        } else if (currentAnswer) {
+                            currentAnswer += ' ' + text;
+                        }
+                    }
+                    
+                    if (currentQuestion && currentAnswer) {
+                        faqArray.push({ 
+                            question: currentQuestion.replace(/^Q\.\s*/i, '').trim(), 
+                            answer: currentAnswer.replace(/^A\.\s*/i, '').trim() 
+                        });
+                    }
+                }
+                
+                cleanHtml = cleanHtml.trim();
+                
+                const blogSlug = title
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    .substring(0, 200) || 'blog';
+                
+                const config = GitHubConfig.load();
+                const ghPagesBase = config.username && config.repoName ? `https://${config.username}.github.io/${config.repoName}` : 'https://your-github-username.github.io/your-repo-name';
+                const featuredImageUrl = titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : '';
+                
+                const contentImageUrls = Array.from(contentImages).map(img => 
+                    `${ghPagesBase}/images/${blogSlug}/${img.name}`
+                );
+                
+                const blogData = {
+                    title: title,
+                    author: author,
+                    category: category,
+                    date: date,
+                    excerpt: excerpt,
+                    featured_image: featuredImageUrl,
+                    content_images: contentImageUrls,
+                    content: `<div style="font-family: 'Times New Roman', serif;">${cleanHtml}</div>`,
+                    faq: faqArray
+                };
                 
                 let titleImageHtml = '';
                 if (titleImage) {
                     const titleImageUrl = URL.createObjectURL(titleImage);
-                    const futureUrl = `${githubPagesUrl}/images/${blogName}/${titleImage.name}`;
+                    const futureUrl = `${ghPagesBase}/images/${blogSlug}/${titleImage.name}`;
                     titleImageHtml = `
                         <div style="margin: 20px 0;">
                             <img src="${titleImageUrl}" alt="Title Image" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
@@ -614,7 +705,7 @@
                 if (contentImages.length > 0) {
                     const imagesList = Array.from(contentImages).map(img => {
                         const imgUrl = URL.createObjectURL(img);
-                        const futureUrl = `${githubPagesUrl}/images/${blogName}/${img.name}`;
+                        const futureUrl = `${ghPagesBase}/images/${blogSlug}/${img.name}`;
                         return `
                             <div style="margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 6px;">
                                 <img src="${imgUrl}" alt="${img.name}" style="width: 100%; border-radius: 4px;" />
@@ -634,11 +725,28 @@
                     `;
                 }
                 
+                const jsonPreview = `
+                    <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
+                        <h3 style="margin-top: 0;">Generated JSON Data</h3>
+                        <p><strong>File:</strong> <code>blogs/${blogSlug}.json</code></p>
+                        <div style="background: #fff; border: 1px solid #e9ecef; border-radius: 4px; overflow: hidden;">
+                            <div style="background: #f8f9fa; padding: 8px 15px; border-bottom: 1px solid #e9ecef; font-family: 'Courier New', monospace; font-size: 12px; color: #6c757d;">
+                                blogs/${blogSlug}.json
+                            </div>
+                            <pre style="margin: 0; padding: 15px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4; overflow-x: auto; background: #fff; color: #212529;">${JSON.stringify(blogData, null, 2)}</pre>
+                        </div>
+                        <p style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                            This is the exact JSON that will be saved to your GitHub repository.
+                        </p>
+                    </div>
+                `;
+                
                 previewContent.innerHTML = `
                     <h3>Blog Preview</h3>
                     <div style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
                         <strong>Note:</strong> This is how your blog will appear on the frontend with GitHub Pages URLs
                     </div>
+                    ${jsonPreview}
                     <div class="preview-content" style="font-family: 'Times New Roman', serif; line-height: 1.6;">
                         <h1 style="margin-bottom: 10px;">${title}</h1>
                         <p><strong>File:</strong> ${blogFile.name}</p>
