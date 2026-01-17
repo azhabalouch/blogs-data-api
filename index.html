@@ -132,6 +132,7 @@
                     <div class="button-group">
                         <button class="btn-secondary" id="validateJsonBtn">✓ Validate JSON</button>
                         <button class="btn-primary" id="downloadJsonBtn">📤 Download Blog JSON</button>
+                        <button class="btn-danger" id="clearEditsBtn">🗑️ Clear Edits</button>
                     </div>
                 </div>
             </div>
@@ -332,8 +333,11 @@
                     useEditedJson = true;
                     setStatusMessage('uploadStatus', 'Using edited JSON for upload...', 'info');
                 } catch (error) {
-                    setStatusMessage('uploadStatus', 'Edited JSON is invalid, falling back to DOCX parsing', 'error');
+                    setStatusMessage('uploadStatus', 'Edited JSON is invalid, falling back to DOCX parsing', 'warning');
+                    localStorage.removeItem('editedBlogData');  // Clear invalid data
                 }
+            } else {
+                setStatusMessage('uploadStatus', 'No edits found, using DOCX parsing...', 'info');
             }
 
             const blogFile = document.getElementById('blogFile').files[0];
@@ -365,6 +369,8 @@
                 await commitUploadSingleCommit(formData);
 
                 setStatusMessage('uploadStatus', '✓ Upload successful! Blog deployed to GitHub.', 'success');
+                // Clear edited data after successful upload to prevent stale data
+                localStorage.removeItem('editedBlogData');
                 document.getElementById('blogFile').value = '';
                 document.getElementById('titleImage').value = '';
                 document.getElementById('contentImages').value = '';
@@ -388,6 +394,8 @@
             const blogFile = formData.get('blog');
             const titleImage = formData.get('titleImage');
             const contentImages = formData.getAll('contentImages');
+            
+            const ghPagesBase = `https://${config.username}.github.io/${config.repoName}`;
             
             const apiUrl = `https://api.github.com/repos/${config.username}/${config.repoName}/contents`;
             const headers = {
@@ -496,6 +504,15 @@
                 
                 cleanHtml = cleanHtml.trim();
                 
+                const blogSlug = title
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    .substring(0, 200) || 'blog';
+                
                 const featuredImageUrl = titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : '';
                 const contentImageUrls = Array.from(contentImages).map(img => 
                     `${ghPagesBase}/images/${blogSlug}/${img.name}`
@@ -523,7 +540,7 @@
                     .replace(/^-+|-+$/g, '')
                     .substring(0, 200) || 'blog';
                 
-                const ghPagesBase = `https://${config.username}.github.io/${config.repoName}`;
+                // ghPagesBase already defined at top
                 
                 if (!useEditedJson || titleImage || contentImages.length > 0) {
                     blogData.featured_image = titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : blogData.featured_image;
@@ -927,6 +944,14 @@
             } catch (error) {
                 status.textContent = '✗ Cannot download invalid JSON: ' + error.message;
                 status.className = 'status-message error';
+            }
+        });
+
+        document.getElementById('clearEditsBtn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear all edits? This will fall back to DOCX parsing on upload.')) {
+                localStorage.removeItem('editedBlogData');
+                loadBlogJson();  // Reload to show original data
+                setStatusMessage('jsonStatus', 'Edits cleared. Upload will use DOCX parsing.', 'info');
             }
         });
 
