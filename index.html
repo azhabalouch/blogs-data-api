@@ -461,7 +461,7 @@
                     .replace(/<p>\s*Content:\s*<\/p>/gi, '')
                     .replace(/<p>\s*FAQ:\s*<\/p>/gi, '');
                 
-                const faqRegex = /<[^>]+>\s*Frequently Asked Questions\s*<\/[^>]+>/gi;
+                const faqRegex = /<[^>]+>\s*Frequently Asked Questions\s*:?\s*<\/[^>]+>/gi;
                 const faqMatch = cleanHtml.match(faqRegex);
                 let faqArray = [];
                 
