@@ -142,6 +142,21 @@
     <script>
         const CONFIG_KEY = 'blogApiConfig';
 
+        function cleanMammothHtml(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            headings.forEach(heading => {
+                const anchors = heading.querySelectorAll('a[id]');
+                anchors.forEach(anchor => {
+                    if (anchor.textContent.trim() === '') {
+                        anchor.remove();
+                    }
+                });
+            });
+            return doc.body.innerHTML;
+        }
+        
         class GitHubConfig {
             static load() {
                 const saved = localStorage.getItem(CONFIG_KEY);
@@ -432,9 +447,10 @@
                     const arrayBuffer = await blogFile.arrayBuffer();
                     const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
                     const html = result.value;
+                    const cleanedHtml = cleanMammothHtml(html);
                     
                     const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = html;
+                    tempDiv.innerHTML = cleanedHtml;
                     const fullText = tempDiv.textContent;
                 
                 const extractField = (pattern) => {
@@ -452,7 +468,7 @@
                 const excerpt = extractField('Excerpt:\\s*(.+?)(?=\\n|Content:|$)') || 
                                (tempDiv.querySelector('p')?.textContent?.substring(0, 200) || '');
                 
-                let cleanHtml = html
+                let cleanHtml = cleanedHtml
                     .replace(/<p>\s*Title:\s*[^<]*<\/p>/gi, '')
                     .replace(/<p>\s*Author:\s*[^<]*<\/p>/gi, '')
                     .replace(/<p>\s*Category:\s*[^<]*<\/p>/gi, '')
@@ -662,9 +678,10 @@
                 const arrayBuffer = await blogFile.arrayBuffer();
                 const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
                 const html = result.value;
+                const cleanedHtml = cleanMammothHtml(html);
                 
                 const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
+                tempDiv.innerHTML = cleanedHtml;
                 const fullText = tempDiv.textContent;
                 
                 const extractField = (pattern) => {
@@ -682,7 +699,7 @@
                 const excerpt = extractField('Excerpt:\\s*(.+?)(?=\\n|Content:|$)') || 
                                (tempDiv.querySelector('p')?.textContent?.substring(0, 200) || '');
                 
-                let cleanHtml = html
+                let cleanHtml = cleanedHtml
                     .replace(/<p>\s*Title:\s*[^<]*<\/p>/gi, '')
                     .replace(/<p>\s*Author:\s*[^<]*<\/p>/gi, '')
                     .replace(/<p>\s*Category:\s*[^<]*<\/p>/gi, '')
