@@ -3,144 +3,494 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blog Data API - Admin Interface</title>
+    <title>Blog Data API - Admin Workspace</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📝 Blog Data API</h1>
-            <p>Admin Interface for Blog Management & GitHub Integration</p>
-        </div>
+    <div class="app-shell">
+        <header class="app-header">
+            <div>
+                <h1>Blog Data API</h1>
+                <p>Upload, edit, preview, and deploy with one workflow.</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="previewBtn" disabled>Open Preview</button>
+                <button class="btn btn-primary" id="uploadBtn" disabled>Upload and Deploy</button>
+            </div>
+        </header>
 
-        <div class="content">
-            <div class="tabs">
-                <button class="tab-button active" data-tab="blog-upload">Blog Upload</button>
-                <button class="tab-button" data-tab="github-config">GitHub Config</button>
+        <main class="app-main">
+            <nav class="tab-nav" aria-label="Admin tabs">
+                <button class="tab-button active" data-tab="blog-upload">Upload</button>
+                <button class="tab-button" data-tab="editor">Editor</button>
                 <button class="tab-button" data-tab="preview">Preview</button>
-                <button class="tab-button" data-tab="json-editor">JSON Editor</button>
-            </div>
+                <button class="tab-button" data-tab="github-config">GitHub</button>
+                <button class="tab-button" data-tab="json-editor">JSON</button>
+            </nav>
 
-            <div id="blog-upload" class="tab-content active">
-                <div class="section">
-                    <h2>Blog Upload</h2>
-                    <div id="uploadStatus" class="status-message"></div>
+            <section class="tab-stage">
+                <div id="globalStatus" class="status-message"></div>
 
-                    <div class="form-group">
-                        <label>Blog Document (.docx)</label>
-                        <div class="file-input-wrapper">
-                            <label for="blogFile" class="file-input-label">
-                                📄 Click to upload or drag & drop
-                            </label>
-                            <input type="file" id="blogFile" accept=".docx">
-                            <div class="file-name" id="blogFileName"></div>
+                <div id="blog-upload" class="tab-content active">
+                    <div class="panel-grid two-column">
+                        <div class="panel">
+                            <h2>Source Files</h2>
+                            <div id="uploadValidationStatus" class="status-message"></div>
+                            <div id="uploadStatus" class="status-message"></div>
+
+                            <div class="form-group">
+                                <label for="blogFile">Blog Document (.docx)</label>
+                                <div class="file-input-wrapper">
+                                    <label for="blogFile" class="file-input-label">Select or drop document</label>
+                                    <input type="file" id="blogFile" accept=".docx">
+                                    <div class="file-name" id="blogFileName"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="titleImage">Title Image</label>
+                                <div class="file-input-wrapper">
+                                    <label for="titleImage" class="file-input-label">Select or drop featured image</label>
+                                    <input type="file" id="titleImage" accept="image/*">
+                                    <div class="file-name" id="titleImageName"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contentImages">Content Images (Multiple)</label>
+                                <div class="file-input-wrapper">
+                                    <label for="contentImages" class="file-input-label">Select or drop inline images</label>
+                                    <input type="file" id="contentImages" accept="image/*" multiple>
+                                    <div class="file-name" id="contentImagesName"></div>
+                                </div>
+                            </div>
+
+                            <div class="button-group">
+                                <button class="btn btn-secondary" id="prepareBtn" disabled>Prepare Draft</button>
+                                <button class="btn btn-danger" id="deleteDraftUploadBtn" type="button">Delete Draft</button>
+                            </div>
+                        </div>
+
+                        <div class="panel">
+                            <h2>Flow</h2>
+                            <ol class="flow-list">
+                                <li>Upload DOCX and images.</li>
+                                <li>Prepare draft to extract editable content.</li>
+                                <li>Edit in Word-style editor.</li>
+                                <li>Preview using website-like article layout.</li>
+                                <li>Upload and deploy in single GitHub commit.</li>
+                            </ol>
+                            <div class="info-box">
+                                Credentials and draft edits are saved in localStorage for convenience.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="editor" class="tab-content">
+                    <div class="panel-grid two-column">
+                        <div class="panel">
+                            <h2>Post Metadata</h2>
+                            <div id="editorStatus" class="status-message"></div>
+                            <div class="form-group"><label for="editTitle">Title</label><input type="text" id="editTitle"></div>
+                            <div class="form-group"><label for="editAuthor">Author</label><input type="text" id="editAuthor"></div>
+                            <div class="form-group"><label for="editCategory">Category</label><input type="text" id="editCategory"></div>
+                            <div class="form-group"><label for="editDate">Date (MM/DD/YYYY)</label><input type="text" id="editDate" placeholder="04/09/2026"></div>
+                            <div class="form-group"><label for="editExcerpt">Excerpt</label><textarea id="editExcerpt" rows="4"></textarea></div>
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel-header-row">
+                                <h2>FAQ Imported From Document</h2>
+                            </div>
+                            <div class="muted">FAQ items are parsed from the document heading and alternating Q./A. paragraphs. Edit the source file to change them.</div>
+                            <div id="faqEditorList" class="faq-editor-list"></div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>Title Image (.jpg, .png, .gif)</label>
-                        <div class="file-input-wrapper">
-                            <label for="titleImage" class="file-input-label">
-                                🖼️ Click to upload or drag & drop
-                            </label>
-                            <input type="file" id="titleImage" accept="image/*">
-                            <div class="file-name" id="titleImageName"></div>
+                    <div class="panel">
+                        <div class="panel-header-row">
+                            <h2>Word-Style Content Editor</h2>
+                            <button class="btn btn-secondary btn-small" id="syncPreviewBtn" type="button">Sync Preview</button>
+                        </div>
+                        <div class="editor-toolbar" role="toolbar" aria-label="Text formatting toolbar">
+                            <button type="button" class="toolbar-btn" data-cmd="bold"><strong>B</strong></button>
+                            <button type="button" class="toolbar-btn" data-cmd="italic"><em>I</em></button>
+                            <button type="button" class="toolbar-btn" data-cmd="underline"><u>U</u></button>
+                            <button type="button" class="toolbar-btn" data-cmd="insertUnorderedList">Bullet</button>
+                            <button type="button" class="toolbar-btn" data-cmd="insertOrderedList">Number</button>
+                            <button type="button" class="toolbar-btn" data-cmd="formatBlock" data-value="h2">H2</button>
+                            <button type="button" class="toolbar-btn" data-cmd="formatBlock" data-value="h3">H3</button>
+                            <button type="button" class="toolbar-btn" data-cmd="formatBlock" data-value="blockquote">Quote</button>
+                            <button type="button" class="toolbar-btn" id="insertLinkBtn">Link</button>
+                            <button type="button" class="toolbar-btn" data-cmd="removeFormat">Clear</button>
+                        </div>
+                        <div id="contentEditor" class="word-editor" contenteditable="true" spellcheck="true"></div>
+                    </div>
+                </div>
+
+                <div id="preview" class="tab-content">
+                    <div class="panel full-height">
+                        <div class="panel-header-row">
+                            <h2>Website Preview</h2>
+                            <button class="btn btn-danger btn-small" id="deleteDraftBtn" type="button">Delete Draft</button>
+                        </div>
+                        <div id="previewContent" class="preview-surface">
+                            <p class="placeholder">Prepare a draft to preview the final website rendering.</p>
                         </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label>Content Images (Multiple)</label>
-                        <div class="file-input-wrapper">
-                            <label for="contentImages" class="file-input-label">
-                                🖼️ Click to upload or drag & drop
-                            </label>
-                            <input type="file" id="contentImages" accept="image/*" multiple>
-                            <div class="file-name" id="contentImagesName"></div>
+                <div id="github-config" class="tab-content">
+                    <div class="panel">
+                        <h2>GitHub Configuration</h2>
+                        <div id="configStatus" class="status-message"></div>
+
+                        <div class="form-group"><label for="githubUsername">GitHub Username</label><input type="text" id="githubUsername" placeholder="e.g., azhabalouch"></div>
+                        <div class="form-group"><label for="repoName">Repository Name</label><input type="text" id="repoName" placeholder="e.g., blogs-data-api"></div>
+                        <div class="form-group"><label for="branchName">Branch Name</label><input type="text" id="branchName" value="main"></div>
+                        <div class="form-group">
+                            <label for="githubToken">GitHub Personal Access Token (PAT)</label>
+                            <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                        </div>
+
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="saveConfigBtn">Save Configuration</button>
+                            <button class="btn btn-secondary" id="testConnectionBtn">Test Connection</button>
+                            <button class="btn btn-danger" id="clearConfigBtn">Clear Credentials</button>
+                        </div>
+
+                        <div id="configSavedMsg" class="config-saved" style="display: none;">Configuration saved successfully.</div>
+                    </div>
+                </div>
+
+                <div id="json-editor" class="tab-content">
+                    <div class="panel full-height">
+                        <h2>JSON (Advanced)</h2>
+                        <div id="blogTitleDisplay" class="json-title-display"></div>
+                        <p class="muted">This editor is synchronized with your draft. Valid JSON updates the WYSIWYG editor and preview.</p>
+                        <div id="jsonStatus" class="status-message"></div>
+                        <textarea id="jsonTextarea" class="json-textarea"></textarea>
+                        <div class="button-group">
+                            <button class="btn btn-secondary" id="validateJsonBtn">Validate JSON</button>
+                            <button class="btn btn-primary" id="downloadJsonBtn">Download JSON</button>
+                            <button class="btn btn-danger" id="clearEditsBtn">Clear Edits</button>
                         </div>
                     </div>
-
-                    <div class="button-group">
-                        <button class="btn-primary" id="uploadBtn" disabled>🚀 Upload & Deploy</button>
-                        <button class="btn-secondary" id="previewBtn" disabled>👁️ Preview</button>
-                    </div>
                 </div>
-            </div>
-
-            <div id="github-config" class="tab-content">
-                <div class="section">
-                    <h2>GitHub Configuration</h2>
-                    
-                    <div class="info-box">
-                        ℹ️ Your credentials are stored securely in browser LocalStorage. You can clear them at any time.
-                    </div>
-
-                    <div id="configStatus" class="status-message"></div>
-
-                    <div class="form-group">
-                        <label>GitHub Username</label>
-                        <input type="text" id="githubUsername" placeholder="e.g., azhabalouch">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Repository Name</label>
-                        <input type="text" id="repoName" placeholder="e.g., blogs-data-api">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Branch Name</label>
-                        <input type="text" id="branchName" placeholder="e.g., main" value="main">
-                    </div>
-
-                    <div class="form-group">
-                        <label>GitHub Personal Access Token (PAT)</label>
-                        <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-                        <small style="color: #666; margin-top: 5px; display: block;">
-                            Generate at: <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a>
-                        </small>
-                    </div>
-
-                    <div class="button-group">
-                        <button class="btn-primary" id="saveConfigBtn">✓ Save Configuration</button>
-                        <button class="btn-secondary" id="testConnectionBtn">🔗 Test Connection</button>
-                        <button class="btn-danger" id="clearConfigBtn">🗑️ Clear Credentials</button>
-                    </div>
-
-                    <div id="configSavedMsg" class="config-saved" style="display: none;">
-                        ✓ Configuration saved successfully
-                    </div>
-                </div>
-            </div>
-
-            <div id="preview" class="tab-content">
-                <div class="section">
-                    <h2>Preview</h2>
-                    <div class="preview-section" id="previewContent">
-                        <p style="color: #999; text-align: center;">Upload a blog document to see preview</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="json-editor" class="tab-content">
-                <div class="section">
-                    <h2>JSON Editor</h2>
-                    <div id="blogTitleDisplay" style="margin-bottom: 10px; font-weight: bold; color: #667eea;"></div>
-                    <p>Edit the JSON for the currently uploaded blog. Changes are auto-saved when you modify the text.</p>
-                    <div id="jsonStatus" class="status-message"></div>
-                    <textarea id="jsonTextarea" rows="30" style="width: 100%; font-family: monospace;"></textarea>
-                    <br><br>
-                    <div class="button-group">
-                        <button class="btn-secondary" id="validateJsonBtn">✓ Validate JSON</button>
-                        <button class="btn-primary" id="downloadJsonBtn">📤 Download Blog JSON</button>
-                        <button class="btn-danger" id="clearEditsBtn">🗑️ Clear Edits</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
 
     <script>
         const CONFIG_KEY = 'blogApiConfig';
+        const EDITED_KEY = 'editedBlogData';
+        const CURRENT_KEY = 'currentBlogData';
+
+        const state = {
+            draft: null,
+            syncingJson: false,
+            syncingEditor: false
+        };
+
+        const REQUIRED_FIELD_LABELS = {
+            title: 'Title',
+            author: 'Author',
+            category: 'Category',
+            date: 'Date',
+            excerpt: 'Excerpt',
+            content: 'Content',
+            faq: 'FAQ'
+        };
+
+        function normalizeText(text) {
+            return (text || '').replace(/\s+/g, ' ').trim();
+        }
+
+        function htmlHasMeaningfulContent(html) {
+            const container = document.createElement('div');
+            container.innerHTML = html || '';
+            const text = normalizeText(container.textContent || '');
+            if (text) {
+                return true;
+            }
+
+            return !!container.querySelector('img, figure, table, blockquote, pre, ul, ol, h1, h2, h3, h4, h5, h6');
+        }
+
+        function escapeRegExp(text) {
+            return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function getBlockText(block) {
+            return normalizeText(block ? block.textContent : '');
+        }
+
+        function trimAtNextLabel(text, nextLabels) {
+            const input = normalizeText(text);
+            if (!input || !nextLabels.length) {
+                return input;
+            }
+
+            const lowerInput = input.toLowerCase();
+            let cutIndex = input.length;
+
+            nextLabels.forEach(label => {
+                const pattern = `${label.toLowerCase()}:`;
+                const index = lowerInput.indexOf(pattern);
+                if (index >= 0 && index < cutIndex) {
+                    cutIndex = index;
+                }
+            });
+
+            return input.slice(0, cutIndex).trim();
+        }
+
+        function extractStructuredFieldFromText(fullText, label, nextLabels) {
+            const text = String(fullText || '').replace(/\r/g, '');
+            const lowerText = text.toLowerCase();
+            const labelToken = `${label.toLowerCase()}:`;
+            const startIndex = lowerText.indexOf(labelToken);
+
+            if (startIndex < 0) {
+                return { found: false, value: '' };
+            }
+
+            const valueStart = startIndex + labelToken.length;
+            let endIndex = text.length;
+
+            nextLabels.forEach(nextLabel => {
+                const nextToken = `${nextLabel.toLowerCase()}:`;
+                const nextIndex = lowerText.indexOf(nextToken, valueStart);
+                if (nextIndex >= 0 && nextIndex < endIndex) {
+                    endIndex = nextIndex;
+                }
+            });
+
+            const value = trimAtNextLabel(text.slice(valueStart, endIndex), nextLabels);
+
+            return {
+                found: true,
+                value
+            };
+        }
+
+        function getStructuredFieldFromBlocks(blocks, label, nextLabels) {
+            const escapedLabel = escapeRegExp(label);
+            const startIndex = blocks.findIndex(block => new RegExp(`^${escapedLabel}\\s*:`, 'i').test(getBlockText(block)));
+
+            if (startIndex < 0) {
+                return { found: false, value: '' };
+            }
+
+            const startText = getBlockText(blocks[startIndex]);
+            const inlineMatch = startText.match(new RegExp(`^${escapedLabel}\\s*:\\s*(.*)$`, 'i'));
+            const collected = inlineMatch ? [trimAtNextLabel(inlineMatch[1], nextLabels)] : [];
+
+            for (let index = startIndex + 1; index < blocks.length; index += 1) {
+                const blockText = getBlockText(blocks[index]);
+                if (!blockText) {
+                    continue;
+                }
+
+                if (/^(title|author|category|date|excerpt|content|frequently asked questions|faq|tags?)\s*:/i.test(blockText)) {
+                    break;
+                }
+
+                collected.push(blockText);
+            }
+
+            return {
+                found: true,
+                value: trimAtNextLabel(collected.join(' '), nextLabels)
+            };
+        }
+
+        function isFaqHeadingBlock(node) {
+            const text = normalizeText(node.textContent);
+            return /^(frequently asked questions|faq)\s*:?$/i.test(text);
+        }
+
+        function isTagsHeadingBlock(node) {
+            const text = normalizeText(node.textContent);
+            return /^(tags?)\s*:?$/i.test(text);
+        }
+
+        function isTitleHeadingBlock(node, title) {
+            if (!title) return false;
+            const text = normalizeText(node.textContent);
+            return /^H[1-6]$/i.test(node.tagName) && text === normalizeText(title);
+        }
+
+        function extractTagItemsFromBlock(block) {
+            if (!block) return [];
+
+            if (/^(UL|OL)$/i.test(block.tagName)) {
+                return Array.from(block.children)
+                    .filter(child => /^LI$/i.test(child.tagName))
+                    .map(child => normalizeText(child.textContent).replace(/^[•·\-–—]+\s*/, '').replace(/^\d+[.)]\s*/, ''))
+                    .filter(Boolean);
+            }
+
+            if (/^P$/i.test(block.tagName) || /^DIV$/i.test(block.tagName)) {
+                return normalizeText(block.textContent)
+                    .replace(/\s+/g, ' ')
+                    .split(/\r?\n|\s*[•·;]\s*|\s*,\s*/)
+                    .map(item => item.replace(/^[•·\-–—]+\s*/, '').replace(/^\d+[.)]\s*/, '').trim())
+                    .filter(Boolean);
+            }
+
+            return [];
+        }
+
+        function parseTagBlocks(tagBlocks) {
+            const tags = [];
+
+            tagBlocks.forEach(block => {
+                extractTagItemsFromBlock(block).forEach(tag => tags.push(tag));
+            });
+
+            return Array.from(new Set(tags));
+        }
+
+        function splitContentAndFaq(cleanedHtml, title) {
+            const container = document.createElement('div');
+            container.innerHTML = cleanedHtml;
+            const blocks = Array.from(container.children);
+            const tagsIndex = blocks.findIndex(isTagsHeadingBlock);
+            const faqIndex = blocks.findIndex(isFaqHeadingBlock);
+            const articleCutIndex = [tagsIndex, faqIndex].filter(index => index >= 0).sort((a, b) => a - b)[0];
+            const articleBlocks = articleCutIndex >= 0 ? blocks.slice(0, articleCutIndex) : blocks.slice();
+            const tagBlocks = tagsIndex >= 0
+                ? blocks.slice(tagsIndex + 1, faqIndex >= 0 && faqIndex > tagsIndex ? faqIndex : blocks.length)
+                : [];
+            const faqBlocks = faqIndex >= 0 ? blocks.slice(faqIndex + 1) : [];
+
+            if (articleBlocks.length && isTitleHeadingBlock(articleBlocks[0], title)) {
+                articleBlocks.shift();
+            }
+
+            while (articleBlocks.length) {
+                const firstText = normalizeText(articleBlocks[0].textContent);
+                if (/^(title|author|category|date|excerpt|content)\s*:/i.test(firstText)) {
+                    articleBlocks.shift();
+                    continue;
+                }
+                break;
+            }
+
+            const articleContainer = document.createElement('div');
+            articleBlocks.forEach(block => articleContainer.appendChild(block.cloneNode(true)));
+
+            return {
+                articleHtml: articleContainer.innerHTML.trim(),
+                tags: parseTagBlocks(tagBlocks),
+                faqBlocks,
+                hasFaqHeading: faqIndex >= 0,
+                hasTagsHeading: tagsIndex >= 0
+            };
+        }
+
+        function parseFaqBlocks(faqBlocks) {
+            const faqArray = [];
+            let currentQuestion = '';
+            let currentAnswer = '';
+            let collectingAnswer = false;
+
+            const pushPair = () => {
+                const question = currentQuestion.replace(/^Q\.\s*/i, '').trim();
+                const answer = currentAnswer.replace(/^A\.\s*/i, '').trim();
+                if (question && answer) {
+                    faqArray.push({ question, answer });
+                }
+                currentQuestion = '';
+                currentAnswer = '';
+                collectingAnswer = false;
+            };
+
+            faqBlocks.forEach(block => {
+                const text = normalizeText(block.textContent);
+                if (!text) {
+                    return;
+                }
+
+                if (/^Q\.\s*/i.test(text)) {
+                    if (currentQuestion && currentAnswer) {
+                        pushPair();
+                    } else if (currentQuestion || currentAnswer) {
+                        currentQuestion = '';
+                        currentAnswer = '';
+                        collectingAnswer = false;
+                    }
+
+                    currentQuestion = text;
+                    currentAnswer = '';
+                    collectingAnswer = false;
+                    return;
+                }
+
+                if (/^A\.\s*/i.test(text)) {
+                    currentAnswer = text;
+                    collectingAnswer = true;
+                    return;
+                }
+
+                if (collectingAnswer && currentAnswer) {
+                    currentAnswer += ` ${text}`;
+                }
+            });
+
+            if (currentQuestion && currentAnswer) {
+                pushPair();
+            }
+
+            return faqArray;
+        }
+
+        function validateDraftData(draft) {
+            const missingSections = [];
+            const title = normalizeText(draft?.title);
+            const author = normalizeText(draft?.author);
+            const category = normalizeText(draft?.category);
+            const date = normalizeText(draft?.date);
+            const excerpt = normalizeText(draft?.excerpt);
+            const content = htmlHasMeaningfulContent(draft?.content);
+            const faqItems = Array.isArray(draft?.faq) ? draft.faq.filter(item => normalizeText(item.question) && normalizeText(item.answer)) : [];
+
+            if (!title) missingSections.push(REQUIRED_FIELD_LABELS.title);
+            if (!author) missingSections.push(REQUIRED_FIELD_LABELS.author);
+            if (!category) missingSections.push(REQUIRED_FIELD_LABELS.category);
+            if (!date) missingSections.push(REQUIRED_FIELD_LABELS.date);
+            if (!excerpt) missingSections.push(REQUIRED_FIELD_LABELS.excerpt);
+            if (!content) missingSections.push(REQUIRED_FIELD_LABELS.content);
+            if (!faqItems.length) missingSections.push(REQUIRED_FIELD_LABELS.faq);
+
+            return {
+                isValid: missingSections.length === 0,
+                missingSections
+            };
+        }
+
+        function renderValidationStatus(report, statusId = 'uploadValidationStatus') {
+            if (!report) {
+                setStatusMessage(statusId, '', 'info');
+                return;
+            }
+
+            if (report.isValid) {
+                setStatusMessage(statusId, 'All required sections were detected.', 'success');
+                return;
+            }
+
+            setStatusMessage(statusId, `Missing required sections: ${report.missingSections.join(', ')}.`, 'warning');
+        }
+
+        function updateDraftValidation(draft) {
+            if (!draft) return null;
+            draft.validation = validateDraftData(draft);
+            return draft.validation;
+        }
 
         function cleanMammothHtml(html) {
             const parser = new DOMParser();
@@ -156,7 +506,90 @@
             });
             return doc.body.innerHTML;
         }
-        
+
+        function computeBlogSlug(title) {
+            return (title || 'blog')
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .substring(0, 200) || 'blog';
+        }
+
+        function removeMetaParagraphs(cleanedHtml) {
+            return cleanedHtml
+                .replace(/<p>\s*Title:\s*[^<]*<\/p>/gi, '')
+                .replace(/<p>\s*Author:\s*[^<]*<\/p>/gi, '')
+                .replace(/<p>\s*Category:\s*[^<]*<\/p>/gi, '')
+                .replace(/<p>\s*Date:\s*[^<]*<\/p>/gi, '')
+                .replace(/<p>\s*Excerpt:\s*[^<]*<\/p>/gi, '')
+                .replace(/<p>\s*Content:\s*<\/p>/gi, '')
+                .replace(/<p>\s*FAQ:\s*<\/p>/gi, '');
+        }
+
+        async function buildBlogDataFromDocx(blogFile, titleImage, contentImages, config) {
+            const arrayBuffer = await blogFile.arrayBuffer();
+            const result = await mammoth.convertToHtml({ arrayBuffer });
+            const html = result.value;
+            const cleanedHtml = cleanMammothHtml(html);
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = cleanedHtml;
+            const blocks = Array.from(tempDiv.children);
+            const rawText = tempDiv.textContent || '';
+
+            const titleMatch = extractStructuredFieldFromText(rawText, 'Title', ['Author', 'Category', 'Date', 'Excerpt', 'Content', 'Frequently Asked Questions', 'FAQ', 'Tags']);
+            const authorMatch = extractStructuredFieldFromText(rawText, 'Author', ['Category', 'Date', 'Excerpt', 'Content', 'Frequently Asked Questions', 'FAQ', 'Tags']);
+            const categoryMatch = extractStructuredFieldFromText(rawText, 'Category', ['Date', 'Excerpt', 'Content', 'Frequently Asked Questions', 'FAQ', 'Tags']);
+            const dateMatch = extractStructuredFieldFromText(rawText, 'Date', ['Excerpt', 'Content', 'Frequently Asked Questions', 'FAQ', 'Tags']);
+            const excerptMatch = extractStructuredFieldFromText(rawText, 'Excerpt', ['Content', 'Frequently Asked Questions', 'FAQ', 'Tags']);
+            const contentMatch = extractStructuredFieldFromText(rawText, 'Content', ['Frequently Asked Questions', 'FAQ', 'Tags']);
+
+            const title = titleMatch.value || getBlockText(tempDiv.querySelector('h1')) || '';
+            const author = authorMatch.value;
+            const category = categoryMatch.value;
+            const date = dateMatch.value.replace(/\\/g, '/');
+            const excerpt = excerptMatch.value;
+            const contentMarkerPresent = /(?:^|\s)Content\s*:/i.test(rawText) || /<p>\s*Content:\s*<\/p>/i.test(cleanedHtml);
+
+            const cleanHtml = removeMetaParagraphs(cleanedHtml);
+            const { articleHtml, tags, faqBlocks, hasFaqHeading } = splitContentAndFaq(cleanHtml, title);
+            const faqArray = parseFaqBlocks(faqBlocks);
+            const contentHtml = htmlHasMeaningfulContent(articleHtml)
+                ? articleHtml
+                : (contentMatch.value ? `<p>${escapeHtml(contentMatch.value)}</p>` : '');
+            const validation = validateDraftData({
+                title: titleMatch.found ? title : '',
+                author: authorMatch.found ? author : '',
+                category: categoryMatch.found ? category : '',
+                date: dateMatch.found ? date : '',
+                excerpt: excerptMatch.found ? excerpt : '',
+                content: contentHtml,
+                faq: hasFaqHeading ? faqArray : []
+            });
+
+            const blogSlug = computeBlogSlug(title);
+            const ghPagesBase = config.username && config.repoName
+                ? `https://${config.username}.github.io/${config.repoName}`
+                : 'https://your-github-username.github.io/your-repo-name';
+
+            return {
+                title: titleMatch.found ? title : '',
+                author: authorMatch.found ? author : '',
+                category: categoryMatch.found ? category : '',
+                date: dateMatch.found ? date : '',
+                excerpt: excerptMatch.found ? excerpt : '',
+                featured_image: titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : '',
+                content_images: Array.from(contentImages || []).map(img => `${ghPagesBase}/images/${blogSlug}/${img.name}`),
+                content: contentHtml,
+                tags,
+                faq: hasFaqHeading ? faqArray : [],
+                validation
+            };
+        }
+
         class GitHubConfig {
             static load() {
                 const saved = localStorage.getItem(CONFIG_KEY);
@@ -172,9 +605,38 @@
             }
         }
 
+        function setStatusMessage(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.textContent = message;
+            el.className = `status-message ${type}`;
+        }
+
+        function initTabs() {
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+            });
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
+            const activeTab = document.getElementById(tabName);
+            if (activeButton) activeButton.classList.add('active');
+            if (activeTab) activeTab.classList.add('active');
+
+            if (tabName === 'json-editor') {
+                loadBlogJson();
+            }
+            if (tabName === 'preview') {
+                renderPreview(state.draft);
+            }
+        }
+
         function initFileInputs() {
             const inputs = ['blogFile', 'titleImage', 'contentImages'];
-            
             inputs.forEach(inputId => {
                 const input = document.getElementById(inputId);
                 initDragDrop(input);
@@ -184,26 +646,17 @@
 
         function initDragDrop(input) {
             const label = input.previousElementSibling;
-            
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                label.addEventListener(eventName, preventDefaults, false);
+                label.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
             });
 
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-
-            label.addEventListener('dragover', () => {
-                label.style.background = '#f0f7ff';
-            });
-
-            label.addEventListener('dragleave', () => {
-                label.style.background = '#f9f9ff';
-            });
-
+            label.addEventListener('dragover', () => label.classList.add('drag-active'));
+            label.addEventListener('dragleave', () => label.classList.remove('drag-active'));
             label.addEventListener('drop', (e) => {
-                label.style.background = '#f9f9ff';
+                label.classList.remove('drag-active');
                 const dt = e.dataTransfer;
                 input.files = dt.files;
                 onFileSelect({ target: input });
@@ -213,7 +666,8 @@
         function onFileSelect(e) {
             const input = e.target;
             const fileNameEl = document.getElementById(input.id + 'Name');
-            
+            if (!fileNameEl) return;
+
             if (input.files.length) {
                 const fileNames = Array.from(input.files).map(f => f.name).join(', ');
                 fileNameEl.textContent = `Selected: ${fileNames}`;
@@ -226,30 +680,11 @@
 
         function updateUploadButtonsState() {
             const blogFile = document.getElementById('blogFile').files.length > 0;
-            document.getElementById('uploadBtn').disabled = !blogFile;
-            document.getElementById('previewBtn').disabled = !blogFile;
+            const draftIsValid = !!state.draft && validateDraftData(state.draft).isValid;
+            document.getElementById('uploadBtn').disabled = !blogFile || !state.draft || !draftIsValid;
+            document.getElementById('prepareBtn').disabled = !blogFile;
+            document.getElementById('previewBtn').disabled = !blogFile && !state.draft;
         }
-
-        document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tabName = btn.dataset.tab;
-                
-                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                
-                btn.classList.add('active');
-                document.getElementById(tabName).classList.add('active');
-                
-                // Auto-load JSON when switching to JSON Editor tab
-                if (tabName === 'json-editor') {
-                    loadBlogJson();
-                }
-            });
-        });
-
-        document.getElementById('saveConfigBtn').addEventListener('click', persistGitHubConfig);
-        document.getElementById('testConnectionBtn').addEventListener('click', verifyGitHubAuth);
-        document.getElementById('clearConfigBtn').addEventListener('click', resetGitHubConfig);
 
         function populateGitHubConfigForm() {
             const config = GitHubConfig.load();
@@ -261,36 +696,35 @@
 
         function persistGitHubConfig() {
             const config = {
-                username: document.getElementById('githubUsername').value,
-                repoName: document.getElementById('repoName').value,
-                branch: document.getElementById('branchName').value,
-                token: document.getElementById('githubToken').value
+                username: document.getElementById('githubUsername').value.trim(),
+                repoName: document.getElementById('repoName').value.trim(),
+                branch: document.getElementById('branchName').value.trim() || 'main',
+                token: document.getElementById('githubToken').value.trim()
             };
 
             if (!config.username || !config.repoName || !config.token) {
-                setStatusMessage('configStatus', 'Please fill in all fields', 'error');
+                setStatusMessage('configStatus', 'Please fill in all fields.', 'error');
                 return;
             }
 
             GitHubConfig.save(config);
-            setStatusMessage('configStatus', 'Configuration saved successfully', 'success');
+            setStatusMessage('configStatus', 'Configuration saved.', 'success');
             document.getElementById('configSavedMsg').style.display = 'block';
             setTimeout(() => {
                 document.getElementById('configSavedMsg').style.display = 'none';
-            }, 3000);
+            }, 2500);
         }
 
         async function verifyGitHubAuth() {
             const config = GitHubConfig.load();
-            
             if (!config.username || !config.token) {
-                setStatusMessage('configStatus', 'Please save configuration first', 'error');
+                setStatusMessage('configStatus', 'Please save configuration first.', 'error');
                 return;
             }
 
             const btn = document.getElementById('testConnectionBtn');
             btn.disabled = true;
-            btn.textContent = '⏳ Testing...';
+            btn.textContent = 'Testing...';
 
             try {
                 const response = await fetch('https://api.github.com/user', {
@@ -301,79 +735,520 @@
                 });
 
                 if (response.ok) {
-                    setStatusMessage('configStatus', '✓ Connection successful!', 'success');
+                    setStatusMessage('configStatus', 'Connection successful.', 'success');
                 } else {
-                    setStatusMessage('configStatus', '✗ Authentication failed. Check your token.', 'error');
+                    setStatusMessage('configStatus', 'Authentication failed. Check your token.', 'error');
                 }
             } catch (error) {
-                setStatusMessage('configStatus', `✗ Connection error: ${error.message}`, 'error');
+                setStatusMessage('configStatus', `Connection error: ${error.message}`, 'error');
             } finally {
                 btn.disabled = false;
-                btn.textContent = '🔗 Test Connection';
+                btn.textContent = 'Test Connection';
             }
         }
 
         function resetGitHubConfig() {
-            if (confirm('Are you sure you want to clear all credentials?')) {
+            if (confirm('Clear saved GitHub credentials?')) {
                 GitHubConfig.clear();
                 populateGitHubConfigForm();
-                setStatusMessage('configStatus', 'Credentials cleared', 'info');
+                setStatusMessage('configStatus', 'Credentials cleared.', 'info');
             }
         }
 
-        function setStatusMessage(elementId, message, type) {
-            const el = document.getElementById(elementId);
-            el.textContent = message;
-            el.className = `status-message ${type}`;
+        function renderFaqEditorRows(faqArray) {
+            const list = document.getElementById('faqEditorList');
+            list.innerHTML = '';
+            const items = Array.isArray(faqArray) ? faqArray.filter(item => normalizeText(item.question) && normalizeText(item.answer)) : [];
+
+            if (!items.length) {
+                list.innerHTML = '<div class="faq-editor-placeholder">No FAQ pairs were detected. Add a "Frequently asked questions" heading with Q./A. paragraphs in the source document.</div>';
+                return;
+            }
+
+            items.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'faq-editor-item readonly';
+                row.innerHTML = `
+                    <div class="faq-item-label">Q${index + 1}</div>
+                    <div class="faq-item-question">${escapeHtml(item.question)}</div>
+                    <div class="faq-item-label">A${index + 1}</div>
+                    <div class="faq-item-answer">${escapeHtml(item.answer)}</div>
+                `;
+                list.appendChild(row);
+            });
         }
+
+        function sanitizeEditorHtml(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+            doc.querySelectorAll('script, style').forEach(node => node.remove());
+            return doc.body.firstElementChild ? doc.body.firstElementChild.innerHTML : html;
+        }
+
+        function saveDraftFromEditor() {
+            if (state.syncingEditor) return;
+
+            const title = document.getElementById('editTitle').value.trim();
+            const author = document.getElementById('editAuthor').value.trim();
+            const category = document.getElementById('editCategory').value.trim();
+            const date = document.getElementById('editDate').value.trim();
+            const excerpt = document.getElementById('editExcerpt').value.trim();
+            const content = sanitizeEditorHtml(document.getElementById('contentEditor').innerHTML.trim());
+            const existing = state.draft || {};
+            const tags = Array.isArray(existing.tags) ? existing.tags : [];
+            const faq = Array.isArray(existing.faq) ? existing.faq : [];
+            const blogSlug = computeBlogSlug(title);
+            const config = GitHubConfig.load();
+            const ghPagesBase = config.username && config.repoName
+                ? `https://${config.username}.github.io/${config.repoName}`
+                : 'https://your-github-username.github.io/your-repo-name';
+
+            const titleImage = document.getElementById('titleImage').files[0];
+            const contentImages = Array.from(document.getElementById('contentImages').files);
+
+            state.draft = {
+                title,
+                author,
+                category,
+                date,
+                excerpt,
+                featured_image: titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : (existing.featured_image || ''),
+                content_images: contentImages.length
+                    ? contentImages.map(img => `${ghPagesBase}/images/${blogSlug}/${img.name}`)
+                    : (existing.content_images || []),
+                content,
+                tags,
+                faq
+            };
+
+            updateDraftValidation(state.draft);
+
+            persistDraft();
+            renderPreview(state.draft);
+            renderValidationStatus(state.draft.validation);
+            setStatusMessage('editorStatus', state.draft.validation.isValid ? 'Draft auto-saved.' : `Draft saved with missing sections: ${state.draft.validation.missingSections.join(', ')}.`, state.draft.validation.isValid ? 'success' : 'warning');
+            updateUploadButtonsState();
+        }
+
+        function loadDraftIntoEditor(draft) {
+            if (!draft) return;
+            state.syncingEditor = true;
+            document.getElementById('editTitle').value = draft.title || '';
+            document.getElementById('editAuthor').value = draft.author || '';
+            document.getElementById('editCategory').value = draft.category || '';
+            document.getElementById('editDate').value = draft.date || '';
+            document.getElementById('editExcerpt').value = draft.excerpt || '';
+            document.getElementById('contentEditor').innerHTML = draft.content || '';
+            renderFaqEditorRows(draft.faq || []);
+            state.syncingEditor = false;
+            updateDraftValidation(draft);
+            updateJsonFromDraft();
+            renderPreview(draft);
+            renderValidationStatus(draft.validation);
+            setStatusMessage('editorStatus', draft.validation.isValid ? 'Draft loaded.' : `Draft loaded with missing sections: ${draft.validation.missingSections.join(', ')}.`, draft.validation.isValid ? 'info' : 'warning');
+            updateUploadButtonsState();
+        }
+
+        function persistDraft() {
+            if (!state.draft) return;
+            localStorage.setItem(CURRENT_KEY, JSON.stringify(state.draft));
+            localStorage.setItem(EDITED_KEY, JSON.stringify(state.draft));
+            updateJsonFromDraft();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function injectContentImages(contentHtml, post) {
+            let content = contentHtml || '';
+            if (!post.content_images || !post.content_images.length) {
+                return content;
+            }
+
+            const tempWrapper = document.createElement('div');
+            tempWrapper.innerHTML = content;
+            const paragraphs = tempWrapper.querySelectorAll('p');
+
+            if (post.content_images.length >= 1 && paragraphs.length > 0) {
+                const midIndex = Math.floor(paragraphs.length / 2);
+                const imageContainer = document.createElement('figure');
+                imageContainer.className = 'content-inline-image';
+                imageContainer.innerHTML = `<img src="${post.content_images[0]}" alt="${escapeHtml(post.title)} image 1">`;
+                paragraphs[midIndex].insertAdjacentElement('afterend', imageContainer);
+            }
+
+            content = tempWrapper.innerHTML;
+
+            if (post.content_images.length >= 2) {
+                content += `<figure class="content-inline-image"><img src="${post.content_images[1]}" alt="${escapeHtml(post.title)} image 2"></figure>`;
+            }
+
+            return content;
+        }
+
+        function renderPreview(post) {
+            const previewContent = document.getElementById('previewContent');
+            if (!post) {
+                previewContent.innerHTML = '<p class="placeholder">Prepare a draft to preview the final website rendering.</p>';
+                return;
+            }
+
+            let contentHtml = post.content || '';
+            contentHtml = contentHtml.replace(/<h1[^>]*>.*?<\/h1>/i, '');
+            contentHtml = injectContentImages(contentHtml, post);
+
+            const featuredImageHtml = post.featured_image
+                ? `<div class="article-featured-image"><img src="${post.featured_image}" alt="${escapeHtml(post.title)}"></div>`
+                : '';
+
+            const faqItems = post.faq || [];
+            const tags = Array.isArray(post.tags) ? post.tags.filter(tag => normalizeText(tag)) : [];
+            const tagsHtml = tags.length ? `
+                <div class="article-tags">
+                    ${tags.map(tag => `<span class="article-tag">${escapeHtml(tag)}</span>`).join('')}
+                </div>
+            ` : '';
+            const faqHtml = faqItems.length ? `
+                <div class="article-faq">
+                    <div class="faq-heading">
+                        <p class="faq-kicker">Need quick answers?</p>
+                        <h3>Frequently Asked Questions</h3>
+                    </div>
+                    <div class="faq-list">
+                        ${faqItems.map((item, idx) => `
+                            <div class="faq-item" data-index="${idx}">
+                                <button class="faq-question" aria-expanded="false" aria-controls="faq-answer-${idx}">
+                                    <span class="faq-question-text">${escapeHtml(item.question)}</span>
+                                    <span class="faq-toggle" aria-hidden="true">+</span>
+                                </button>
+                                <div id="faq-answer-${idx}" class="faq-answer" hidden>
+                                    <p>${escapeHtml(item.answer)}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
+
+            previewContent.innerHTML = `
+                <div class="container">
+                    <div class="content-grid">
+                        <section class="main-articles" id="blog-post-container">
+                            <article class="featured-article">
+                                <h1 class="article-title">${escapeHtml(post.title)}</h1>
+                                <div class="article-meta">
+                                    <span class="author">By ${escapeHtml(post.author || 'Unknown')}</span>
+                                    <span class="separator">|</span>
+                                    <time>${escapeHtml(post.date || '')}</time>
+                                    <span class="separator">|</span>
+                                    <span class="category-tag">${escapeHtml(post.category || 'General')}</span>
+                                </div>
+                                ${featuredImageHtml}
+                                ${tagsHtml}
+                                <div class="article-content">${contentHtml}</div>
+                                ${faqHtml}
+                                <div class="article-footer-link"><a class="back-to-posts-link" href="javascript:void(0)">Back to All Posts</a></div>
+                            </article>
+                        </section>
+                    </div>
+                </div>
+            `;
+
+            previewContent.querySelectorAll('.faq-question').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const answerId = btn.getAttribute('aria-controls');
+                    const answer = previewContent.querySelector(`#${answerId}`);
+                    const isOpen = btn.getAttribute('aria-expanded') === 'true';
+                    btn.setAttribute('aria-expanded', String(!isOpen));
+                    answer.hidden = isOpen;
+                    btn.parentElement.classList.toggle('open', !isOpen);
+                });
+            });
+        }
+
+        async function prepareDraft() {
+            const blogFile = document.getElementById('blogFile').files[0];
+            const titleImage = document.getElementById('titleImage').files[0];
+            const contentImages = document.getElementById('contentImages').files;
+
+            if (!blogFile) {
+                setStatusMessage('uploadStatus', 'Please upload a DOCX file first.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('prepareBtn');
+            btn.disabled = true;
+            btn.textContent = 'Preparing...';
+            setStatusMessage('uploadStatus', 'Parsing DOCX and preparing draft...', 'info');
+
+            try {
+                const config = GitHubConfig.load();
+                state.draft = await buildBlogDataFromDocx(blogFile, titleImage, contentImages, config);
+                updateDraftValidation(state.draft);
+                persistDraft();
+                loadDraftIntoEditor(state.draft);
+                updateUploadButtonsState();
+                switchTab('editor');
+                renderValidationStatus(state.draft.validation);
+                setStatusMessage('uploadStatus', state.draft.validation.isValid ? 'Draft prepared. You can now edit and preview.' : `Draft prepared with missing sections: ${state.draft.validation.missingSections.join(', ')}.`, state.draft.validation.isValid ? 'success' : 'warning');
+            } catch (error) {
+                setStatusMessage('uploadStatus', `Failed to prepare draft: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Prepare Draft';
+            }
+        }
+
+        function updateJsonFromDraft() {
+            if (!state.draft) return;
+            state.syncingJson = true;
+            const textarea = document.getElementById('jsonTextarea');
+            textarea.value = JSON.stringify(state.draft, null, 2);
+            document.getElementById('blogTitleDisplay').textContent = state.draft.title ? `Editing: ${state.draft.title}` : '';
+            state.syncingJson = false;
+        }
+
+        function clearDraftState(message = 'Draft deleted.') {
+            localStorage.removeItem(EDITED_KEY);
+            localStorage.removeItem(CURRENT_KEY);
+            state.draft = null;
+            renderValidationStatus(null);
+            renderPreview(null);
+            document.getElementById('editTitle').value = '';
+            document.getElementById('editAuthor').value = '';
+            document.getElementById('editCategory').value = '';
+            document.getElementById('editDate').value = '';
+            document.getElementById('editExcerpt').value = '';
+            document.getElementById('contentEditor').innerHTML = '';
+            document.getElementById('faqEditorList').innerHTML = '';
+            document.getElementById('jsonTextarea').value = '';
+            document.getElementById('blogTitleDisplay').textContent = '';
+            updateUploadButtonsState();
+            setStatusMessage('globalStatus', message, 'info');
+        }
+
+        function loadBlogJson() {
+            const status = document.getElementById('jsonStatus');
+            const titleDisplay = document.getElementById('blogTitleDisplay');
+            const textarea = document.getElementById('jsonTextarea');
+
+            try {
+                const editedData = localStorage.getItem(EDITED_KEY);
+                const currentData = localStorage.getItem(CURRENT_KEY);
+                const jsonData = editedData ? JSON.parse(editedData) : (currentData ? JSON.parse(currentData) : null);
+
+                if (!jsonData) {
+                    throw new Error('No blog draft loaded.');
+                }
+
+                state.draft = jsonData;
+                updateDraftValidation(state.draft);
+                textarea.value = JSON.stringify(jsonData, null, 2);
+                titleDisplay.textContent = jsonData.title ? `Editing: ${jsonData.title}` : 'No title available';
+                status.textContent = 'JSON loaded.';
+                status.className = 'status-message info';
+                renderValidationStatus(state.draft.validation);
+            } catch (error) {
+                status.textContent = `JSON load error: ${error.message}`;
+                status.className = 'status-message error';
+                titleDisplay.textContent = '';
+                textarea.value = '';
+            }
+        }
+
+        function initJsonEditor() {
+            document.getElementById('jsonTextarea').addEventListener('input', () => {
+                if (state.syncingJson) return;
+                const status = document.getElementById('jsonStatus');
+                const text = document.getElementById('jsonTextarea').value;
+
+                try {
+                    const jsonData = JSON.parse(text);
+                    state.draft = jsonData;
+                    localStorage.setItem(EDITED_KEY, JSON.stringify(jsonData));
+                    localStorage.setItem(CURRENT_KEY, JSON.stringify(jsonData));
+                    updateDraftValidation(state.draft);
+                    loadDraftIntoEditor(jsonData);
+                    status.textContent = 'Valid JSON. Draft updated.';
+                    status.className = 'status-message success';
+                } catch (error) {
+                    status.textContent = 'Invalid JSON. Draft not updated.';
+                    status.className = 'status-message error';
+                }
+            });
+
+            document.getElementById('validateJsonBtn').addEventListener('click', () => {
+                const status = document.getElementById('jsonStatus');
+                const text = document.getElementById('jsonTextarea').value;
+                try {
+                    JSON.parse(text);
+                    status.textContent = 'JSON is valid.';
+                    status.className = 'status-message success';
+                } catch (error) {
+                    status.textContent = `JSON is invalid: ${error.message}`;
+                    status.className = 'status-message error';
+                }
+            });
+
+            document.getElementById('downloadJsonBtn').addEventListener('click', () => {
+                const status = document.getElementById('jsonStatus');
+                const text = document.getElementById('jsonTextarea').value;
+                try {
+                    JSON.parse(text);
+                    const blob = new Blob([text], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'api.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    status.textContent = 'JSON downloaded.';
+                    status.className = 'status-message success';
+                } catch (error) {
+                    status.textContent = `Cannot download invalid JSON: ${error.message}`;
+                    status.className = 'status-message error';
+                }
+            });
+
+            document.getElementById('clearEditsBtn').addEventListener('click', () => {
+                if (confirm('Clear all saved edits and return to parsed draft data?')) {
+                    localStorage.removeItem(EDITED_KEY);
+                    const current = localStorage.getItem(CURRENT_KEY);
+                    state.draft = current ? JSON.parse(current) : null;
+                    if (state.draft) {
+                        loadDraftIntoEditor(state.draft);
+                    }
+                    loadBlogJson();
+                    setStatusMessage('jsonStatus', 'Edits cleared.', 'info');
+                }
+            });
+        }
+
+        function initEditorBindings() {
+            ['editTitle', 'editAuthor', 'editCategory', 'editDate', 'editExcerpt'].forEach(id => {
+                document.getElementById(id).addEventListener('input', saveDraftFromEditor);
+            });
+            document.getElementById('contentEditor').addEventListener('input', saveDraftFromEditor);
+            document.getElementById('contentEditor').addEventListener('keydown', handleContentEditorKeydown);
+
+            document.getElementById('syncPreviewBtn').addEventListener('click', () => {
+                saveDraftFromEditor();
+                switchTab('preview');
+                setStatusMessage('globalStatus', 'Preview synchronized with latest draft.', 'success');
+            });
+
+            document.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const cmd = btn.dataset.cmd;
+                    const value = btn.dataset.value || null;
+                    document.execCommand(cmd, false, value);
+                    document.getElementById('contentEditor').focus();
+                    saveDraftFromEditor();
+                });
+            });
+
+            document.getElementById('insertLinkBtn').addEventListener('click', () => {
+                const url = prompt('Enter URL');
+                if (url) {
+                    document.execCommand('createLink', false, url.trim());
+                    saveDraftFromEditor();
+                }
+            });
+        }
+
+        document.getElementById('saveConfigBtn').addEventListener('click', persistGitHubConfig);
+        document.getElementById('testConnectionBtn').addEventListener('click', verifyGitHubAuth);
+        document.getElementById('clearConfigBtn').addEventListener('click', resetGitHubConfig);
+        document.getElementById('prepareBtn').addEventListener('click', prepareDraft);
+        document.getElementById('previewBtn').addEventListener('click', () => {
+            if (!state.draft) {
+                prepareDraft().then(() => switchTab('preview'));
+                return;
+            }
+            saveDraftFromEditor();
+            switchTab('preview');
+        });
+
+        document.getElementById('deleteDraftUploadBtn').addEventListener('click', () => {
+            if (confirm('Delete the current draft and clear saved edits?')) {
+                clearDraftState('Draft deleted. Upload and preview are reset.');
+            }
+        });
+
+        document.getElementById('deleteDraftBtn').addEventListener('click', () => {
+            if (confirm('Delete the current draft and clear saved edits?')) {
+                clearDraftState('Draft deleted. Upload and preview are reset.');
+            }
+        });
 
         document.getElementById('uploadBtn').addEventListener('click', uploadAndDeployToGitHub);
 
         async function uploadAndDeployToGitHub() {
             const config = GitHubConfig.load();
-            
+
             if (!config.username || !config.token) {
-                setStatusMessage('uploadStatus', 'Please configure GitHub credentials first', 'error');
+                setStatusMessage('uploadStatus', 'Please configure GitHub credentials first.', 'error');
+                switchTab('github-config');
                 return;
             }
 
-            // Check if edited JSON exists
-            const editedData = localStorage.getItem('editedBlogData');
-            let useEditedJson = false;
-            let editedJson = null;
-            
-            if (editedData) {
-                try {
-                    editedJson = JSON.parse(editedData);
-                    useEditedJson = true;
-                    setStatusMessage('uploadStatus', 'Using edited JSON for upload...', 'info');
-                } catch (error) {
-                    setStatusMessage('uploadStatus', 'Edited JSON is invalid, falling back to DOCX parsing', 'warning');
-                    localStorage.removeItem('editedBlogData');  // Clear invalid data
-                }
-            } else {
-                setStatusMessage('uploadStatus', 'No edits found, using DOCX parsing...', 'info');
+            const activeTab = document.querySelector('.tab-content.active')?.id;
+            if (activeTab === 'editor' || activeTab === 'preview') {
+                saveDraftFromEditor();
+            }
+
+            const currentValidation = validateDraftData(state.draft);
+            renderValidationStatus(currentValidation);
+            if (!currentValidation.isValid) {
+                setStatusMessage('uploadStatus', `Cannot upload yet. Missing required sections: ${currentValidation.missingSections.join(', ')}.`, 'error');
+                return;
             }
 
             const blogFile = document.getElementById('blogFile').files[0];
             const titleImage = document.getElementById('titleImage').files[0];
             const contentImages = document.getElementById('contentImages').files;
 
+            if (!blogFile) {
+                setStatusMessage('uploadStatus', 'Please select a blog DOCX file.', 'error');
+                return;
+            }
+
+            const editedData = localStorage.getItem(EDITED_KEY);
+            let useEditedJson = false;
+            let editedJson = null;
+
+            if (editedData) {
+                try {
+                    editedJson = JSON.parse(editedData);
+                    const editedValidation = validateDraftData(editedJson);
+                    renderValidationStatus(editedValidation);
+                    if (!editedValidation.isValid) {
+                        setStatusMessage('uploadStatus', `Cannot upload yet. Missing required sections: ${editedValidation.missingSections.join(', ')}.`, 'error');
+                        return;
+                    }
+                    useEditedJson = true;
+                    setStatusMessage('uploadStatus', 'Using edited draft for upload...', 'info');
+                } catch (error) {
+                    setStatusMessage('uploadStatus', 'Edited data invalid. Falling back to DOCX parsing.', 'info');
+                    localStorage.removeItem(EDITED_KEY);
+                }
+            }
+
             const btn = document.getElementById('uploadBtn');
             btn.disabled = true;
-            btn.textContent = '⏳ Uploading...';
+            btn.textContent = 'Uploading...';
 
             try {
-                setStatusMessage('uploadStatus', 'Starting upload...', 'info');
-
                 const blogTitle = blogFile.name.replace('.docx', '');
-
                 const formData = new FormData();
                 formData.append('blog', blogFile);
                 if (titleImage) formData.append('titleImage', titleImage);
-                Array.from(contentImages).forEach(img => {
-                    formData.append('contentImages', img);
-                });
+                Array.from(contentImages).forEach(img => formData.append('contentImages', img));
                 formData.append('title', blogTitle);
                 formData.append('config', JSON.stringify(config));
                 formData.append('useEditedJson', useEditedJson.toString());
@@ -383,9 +1258,8 @@
 
                 await commitUploadSingleCommit(formData);
 
-                setStatusMessage('uploadStatus', '✓ Upload successful! Blog deployed to GitHub.', 'success');
-                // Clear edited data after successful upload to prevent stale data
-                localStorage.removeItem('editedBlogData');
+                setStatusMessage('uploadStatus', 'Upload successful. Blog deployed to GitHub.', 'success');
+                clearDraftState('Upload successful. Blog deployed to GitHub.');
                 document.getElementById('blogFile').value = '';
                 document.getElementById('titleImage').value = '';
                 document.getElementById('contentImages').value = '';
@@ -394,10 +1268,10 @@
                 document.getElementById('contentImagesName').textContent = '';
                 updateUploadButtonsState();
             } catch (error) {
-                setStatusMessage('uploadStatus', `✗ Upload failed: ${error.message}`, 'error');
+                setStatusMessage('uploadStatus', `Upload failed: ${error.message}`, 'error');
             } finally {
                 btn.disabled = false;
-                btn.textContent = '🚀 Upload & Deploy';
+                btn.textContent = 'Upload and Deploy';
             }
         }
 
@@ -405,17 +1279,20 @@
             const config = JSON.parse(formData.get('config'));
             const useEditedJson = formData.get('useEditedJson') === 'true';
             const editedJson = useEditedJson ? JSON.parse(formData.get('editedJson')) : null;
-            
+
             const blogFile = formData.get('blog');
             const titleImage = formData.get('titleImage');
             const contentImages = formData.getAll('contentImages');
-            
-            const ghPagesBase = `https://${config.username}.github.io/${config.repoName}`;
-            
-            const apiUrl = `https://api.github.com/repos/${config.username}/${config.repoName}/contents`;
-            const headers = {
+
+            const owner = config.username;
+            const repo = config.repoName;
+            const branch = config.branch || 'main';
+            const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
+
+            const authHeaders = {
                 'Authorization': `token ${config.token}`,
-                'Accept': 'application/vnd.github.v3+json'
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
             };
 
             function arrayBufferToBase64(buffer) {
@@ -427,554 +1304,199 @@
                 return btoa(binary);
             }
 
-            function stringToBase64(str) {
-                const bytes = new TextEncoder().encode(str);
-                let binary = '';
-                for (let i = 0; i < bytes.byteLength; i++) {
-                    binary += String.fromCharCode(bytes[i]);
+            async function githubRequest(url, options) {
+                const resp = await fetch(url, options);
+                if (!resp.ok) {
+                    const text = await resp.text();
+                    throw new Error(`GitHub API error ${resp.status}: ${text}`);
                 }
-                return btoa(binary);
+                return resp.json();
             }
 
-            try {
-                let blogData;
-                
-                if (useEditedJson) {
-                    blogData = editedJson;
-                    setStatusMessage('uploadStatus', '📤 Using edited JSON data...', 'info');
-                } else {
-                    setStatusMessage('uploadStatus', '📄 Parsing DOCX file...', 'info');
-                    const arrayBuffer = await blogFile.arrayBuffer();
-                    const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
-                    const html = result.value;
-                    const cleanedHtml = cleanMammothHtml(html);
-                    
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = cleanedHtml;
-                    const fullText = tempDiv.textContent;
-                
-                const extractField = (pattern) => {
-                    const regex = new RegExp(pattern, 'i');
-                    const match = fullText.match(regex);
-                    return match ? match[1].trim() : '';
-                };
-                
-                const title = extractField('Title:\\s*(.+?)(?=\\n|Author:|$)') || 
-                             (tempDiv.querySelector('h1')?.textContent || 'Untitled');
-                const author = extractField('Author:\\s*(.+?)(?=\\n|Category:|$)') || 'Unknown';
-                const category = extractField('Category:\\s*(.+?)(?=\\n|Date:|$)') || 'General';
-                const date = extractField('Date:\\s*(.+?)(?=\\n|Excerpt:|$)').replace(/\\\\/g, '/') || 
-                            new Date().toLocaleDateString('en-US', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\//g, '/');
-                const excerpt = extractField('Excerpt:\\s*(.+?)(?=\\n|Content:|$)') || 
-                               (tempDiv.querySelector('p')?.textContent?.substring(0, 200) || '');
-                
-                let cleanHtml = cleanedHtml
-                    .replace(/<p>\s*Title:\s*[^<]*<\/p>/gi, '')
-                    .replace(/<p>\s*Author:\s*[^<]*<\/p>/gi, '')
-                    .replace(/<p>\s*Category:\s*[^<]*<\/p>/gi, '')
-                    .replace(/<p>\s*Date:\s*[^<]*<\/p>/gi, '')
-                    .replace(/<p>\s*Excerpt:\s*[^<]*<\/p>/gi, '')
-                    .replace(/<p>\s*Content:\s*<\/p>/gi, '')
-                    .replace(/<p>\s*FAQ:\s*<\/p>/gi, '');
-                
-                const faqRegex = /<[^>]+>\s*Frequently Asked Questions\s*:?\s*<\/[^>]+>/gi;
-                const faqMatch = cleanHtml.match(faqRegex);
-                let faqArray = [];
-                
-                if (faqMatch) {
-                    const parts = cleanHtml.split(faqRegex);
-                    cleanHtml = parts[0].trim();
-                    
-                    const faqHtml = parts[1] || '';
-                    const paragraphs = faqHtml.match(/<p[^>]*>.*?<\/p>/gi) || [];
-                    
-                    let currentQuestion = '';
-                    let currentAnswer = '';
-                    
-                    for (const para of paragraphs) {
-                        const text = para.replace(/<[^>]+>/g, '').trim();
-                        
-                        if (text.startsWith('Q.')) {
-                            if (currentQuestion && currentAnswer) {
-                                faqArray.push({ 
-                                    question: currentQuestion.replace(/^Q\.\s*/i, '').trim(), 
-                                    answer: currentAnswer.replace(/^A\.\s*/i, '').trim() 
-                                });
-                            }
-                            currentQuestion = text;
-                            currentAnswer = '';
-                        } else if (text.startsWith('A.')) {
-                            currentAnswer = text;
-                        } else if (currentAnswer) {
-                            currentAnswer += ' ' + text;
-                        }
-                    }
-                    
-                    if (currentQuestion && currentAnswer) {
-                        faqArray.push({ 
-                            question: currentQuestion.replace(/^Q\.\s*/i, '').trim(), 
-                            answer: currentAnswer.replace(/^A\.\s*/i, '').trim() 
-                        });
-                    }
-                }
-                
-                cleanHtml = cleanHtml.trim();
-                
-                const blogSlug = title
-                    .toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9\s-]/g, '')
-                    .replace(/\s+/g, '-')
-                    .replace(/-+/g, '-')
-                    .replace(/^-+|-+$/g, '')
-                    .substring(0, 200) || 'blog';
-                
-                const featuredImageUrl = titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : '';
-                const contentImageUrls = Array.from(contentImages).map(img => 
-                    `${ghPagesBase}/images/${blogSlug}/${img.name}`
-                );
-                
-                blogData = {
-                    title: title,
-                    author: author,
-                    category: category,
-                    date: date,
-                    excerpt: excerpt,
-                    featured_image: featuredImageUrl,
-                    content_images: contentImageUrls,
-                    content: `<div style="font-family: 'Times New Roman', serif;">${cleanHtml}</div>`,
-                    faq: faqArray
-                };
-                }
-
-                const blogSlug = blogData.title
-                    .toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9\s-]/g, '')
-                    .replace(/\s+/g, '-')
-                    .replace(/-+/g, '-')
-                    .replace(/^-+|-+$/g, '')
-                    .substring(0, 200) || 'blog';
-                
-                // ghPagesBase already defined at top
-                
-                if (!useEditedJson || titleImage || contentImages.length > 0) {
-                    blogData.featured_image = titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : blogData.featured_image;
-                    blogData.content_images = Array.from(contentImages).map(img => 
-                        `${ghPagesBase}/images/${blogSlug}/${img.name}`
-                    );
-                }
-                
-                setStatusMessage('uploadStatus', '📤 Preparing single commit...', 'info');
-
-                const owner = config.username;
-                const repo = config.repoName;
-                const branch = config.branch || 'main';
-                const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
-
-                const authHeaders = {
-                    'Authorization': `token ${config.token}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
-                };
-
-                async function githubRequest(url, options) {
-                    const resp = await fetch(url, options);
-                    if (!resp.ok) {
-                        const text = await resp.text();
-                        throw new Error(`GitHub API error ${resp.status}: ${text}`);
-                    }
-                    return resp.json();
-                }
-
-                const ref = await githubRequest(`${apiBase}/git/refs/heads/${branch}`, { headers: authHeaders });
-                const headCommitSha = ref.object.sha;
-                const headCommit = await githubRequest(`${apiBase}/git/commits/${headCommitSha}`, { headers: authHeaders });
-                const baseTreeSha = headCommit.tree.sha;
-
-                const jsonPayload = JSON.stringify(blogData, null, 2);
-                const blogBlob = await githubRequest(`${apiBase}/git/blobs`, {
-                    method: 'POST',
-                    headers: authHeaders,
-                    body: JSON.stringify({ content: jsonPayload, encoding: 'utf-8' })
-                });
-
-                const treeEntries = [
-                    { path: `blogs/${blogSlug}.json`, mode: '100644', type: 'blob', sha: blogBlob.sha }
-                ];
-
-                if (titleImage) {
-                    const titleArrayBuffer = await titleImage.arrayBuffer();
-                    const titleBase64 = arrayBufferToBase64(titleArrayBuffer);
-                    const titleBlob = await githubRequest(`${apiBase}/git/blobs`, {
-                        method: 'POST',
-                        headers: authHeaders,
-                        body: JSON.stringify({ content: titleBase64, encoding: 'base64' })
-                    });
-                    treeEntries.push({ path: `images/${blogSlug}/${titleImage.name}`, mode: '100644', type: 'blob', sha: titleBlob.sha });
-                }
-
-                if (contentImages.length > 0) {
-                    for (const img of contentImages) {
-                        const buf = await img.arrayBuffer();
-                        const b64 = arrayBufferToBase64(buf);
-                        const imgBlob = await githubRequest(`${apiBase}/git/blobs`, {
-                            method: 'POST',
-                            headers: authHeaders,
-                            body: JSON.stringify({ content: b64, encoding: 'base64' })
-                        });
-                        treeEntries.push({ path: `images/${blogSlug}/${img.name}`, mode: '100644', type: 'blob', sha: imgBlob.sha });
-                    }
-                }
-
-                const newTree = await githubRequest(`${apiBase}/git/trees`, {
-                    method: 'POST',
-                    headers: authHeaders,
-                    body: JSON.stringify({ base_tree: baseTreeSha, tree: treeEntries })
-                });
-
-                const commitMessage = `blogs uploaded - ${blogSlug}`;
-                const newCommit = await githubRequest(`${apiBase}/git/commits`, {
-                    method: 'POST',
-                    headers: authHeaders,
-                    body: JSON.stringify({ message: commitMessage, tree: newTree.sha, parents: [headCommitSha] })
-                });
-
-                await githubRequest(`${apiBase}/git/refs/heads/${branch}`, {
-                    method: 'PATCH',
-                    headers: authHeaders,
-                    body: JSON.stringify({ sha: newCommit.sha, force: false })
-                });
-
-                setStatusMessage('uploadStatus', `✓ Single commit created: ${commitMessage}`, 'success');
-
-            } catch (error) {
-                throw new Error(`Upload failed: ${error.message}`);
+            let blogData;
+            if (useEditedJson) {
+                blogData = editedJson;
+            } else {
+                blogData = await buildBlogDataFromDocx(blogFile, titleImage, contentImages, config);
             }
+
+            const blogValidation = validateDraftData(blogData);
+            if (!blogValidation.isValid) {
+                throw new Error(`Missing required sections: ${blogValidation.missingSections.join(', ')}.`);
+            }
+
+            const blogSlug = computeBlogSlug(blogData.title);
+            const ghPagesBase = `https://${config.username}.github.io/${config.repoName}`;
+
+            if (!useEditedJson || titleImage || contentImages.length > 0) {
+                blogData.featured_image = titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : blogData.featured_image;
+                blogData.content_images = Array.from(contentImages).map(img => `${ghPagesBase}/images/${blogSlug}/${img.name}`);
+            }
+
+            const ref = await githubRequest(`${apiBase}/git/refs/heads/${branch}`, { headers: authHeaders });
+            const headCommitSha = ref.object.sha;
+            const headCommit = await githubRequest(`${apiBase}/git/commits/${headCommitSha}`, { headers: authHeaders });
+            const baseTreeSha = headCommit.tree.sha;
+
+            const blogBlob = await githubRequest(`${apiBase}/git/blobs`, {
+                method: 'POST',
+                headers: authHeaders,
+                body: JSON.stringify({ content: JSON.stringify(blogData, null, 2), encoding: 'utf-8' })
+            });
+
+            const treeEntries = [
+                { path: `blogs/${blogSlug}.json`, mode: '100644', type: 'blob', sha: blogBlob.sha }
+            ];
+
+            if (titleImage) {
+                const titleArrayBuffer = await titleImage.arrayBuffer();
+                const titleBase64 = arrayBufferToBase64(titleArrayBuffer);
+                const titleBlob = await githubRequest(`${apiBase}/git/blobs`, {
+                    method: 'POST',
+                    headers: authHeaders,
+                    body: JSON.stringify({ content: titleBase64, encoding: 'base64' })
+                });
+                treeEntries.push({ path: `images/${blogSlug}/${titleImage.name}`, mode: '100644', type: 'blob', sha: titleBlob.sha });
+            }
+
+            for (const img of contentImages) {
+                const buf = await img.arrayBuffer();
+                const b64 = arrayBufferToBase64(buf);
+                const imgBlob = await githubRequest(`${apiBase}/git/blobs`, {
+                    method: 'POST',
+                    headers: authHeaders,
+                    body: JSON.stringify({ content: b64, encoding: 'base64' })
+                });
+                treeEntries.push({ path: `images/${blogSlug}/${img.name}`, mode: '100644', type: 'blob', sha: imgBlob.sha });
+            }
+
+            const newTree = await githubRequest(`${apiBase}/git/trees`, {
+                method: 'POST',
+                headers: authHeaders,
+                body: JSON.stringify({ base_tree: baseTreeSha, tree: treeEntries })
+            });
+
+            const commitMessage = `blogs uploaded - ${blogSlug}`;
+            const newCommit = await githubRequest(`${apiBase}/git/commits`, {
+                method: 'POST',
+                headers: authHeaders,
+                body: JSON.stringify({ message: commitMessage, tree: newTree.sha, parents: [headCommitSha] })
+            });
+
+            await githubRequest(`${apiBase}/git/refs/heads/${branch}`, {
+                method: 'PATCH',
+                headers: authHeaders,
+                body: JSON.stringify({ sha: newCommit.sha, force: false })
+            });
         }
 
-        document.getElementById('previewBtn').addEventListener('click', async () => {
-            const tabBtn = document.querySelector('[data-tab="preview"]');
-            tabBtn.click();
-            
-            const blogFile = document.getElementById('blogFile').files[0];
-            const titleImage = document.getElementById('titleImage').files[0];
-            const contentImages = document.getElementById('contentImages').files;
-            const previewContent = document.getElementById('previewContent');
-            
-            if (!blogFile) {
-                previewContent.innerHTML = '<p style="color: #999; text-align: center;">Please select a blog file first</p>';
+        function findClosestElement(node, selector, root) {
+            let current = node && node.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+            while (current && current !== root) {
+                if (current.matches(selector)) {
+                    return current;
+                }
+                current = current.parentElement;
+            }
+            return current && current.matches(selector) ? current : null;
+        }
+
+        function isEmptyListItem(listItem) {
+            const clone = listItem.cloneNode(true);
+            clone.querySelectorAll('br').forEach(node => node.remove());
+            return normalizeText(clone.textContent.replace(/\u200b/g, '')) === '';
+        }
+
+        function placeCaretAtStart(element) {
+            const selection = window.getSelection();
+            if (!selection) return;
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        function handleContentEditorKeydown(event) {
+            if (event.key !== 'Backspace') {
                 return;
             }
-            
-            previewContent.innerHTML = `
-                <h3>Blog Preview</h3>
-                <div style="text-align: center; padding: 40px;">
-                    <p>⏳ Loading and parsing ${blogFile.name}...</p>
-                </div>
-            `;
-            
-            try {
-                const arrayBuffer = await blogFile.arrayBuffer();
-                const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
-                const html = result.value;
-                const cleanedHtml = cleanMammothHtml(html);
-                
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = cleanedHtml;
-                const fullText = tempDiv.textContent;
-                
-                const extractField = (pattern) => {
-                    const regex = new RegExp(pattern, 'i');
-                    const match = fullText.match(regex);
-                    return match ? match[1].trim() : '';
-                };
-                
-                const title = extractField('Title:\\s*(.+?)(?=\\n|Author:|$)') || 
-                             (tempDiv.querySelector('h1')?.textContent || 'Untitled');
-                const author = extractField('Author:\\s*(.+?)(?=\\n|Category:|$)') || 'Unknown';
-                const category = extractField('Category:\\s*(.+?)(?=\\n|Date:|$)') || 'General';
-                const date = extractField('Date:\\s*(.+?)(?=\\n|Excerpt:|$)').replace(/\\\\/g, '/') || 
-                            new Date().toLocaleDateString('en-US', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\//g, '/');
-                const excerpt = extractField('Excerpt:\\s*(.+?)(?=\\n|Content:|$)') || 
-                               (tempDiv.querySelector('p')?.textContent?.substring(0, 200) || '');
-                
-                let cleanHtml = cleanedHtml
-                    .replace(/<p>\s*Title:\s*[^<]*<\/p>/gi, '')
-                    .replace(/<p>\s*Author:\s*[^<]*<\/p>/gi, '')
-                    .replace(/<p>\s*Category:\s*[^<]*<\/p>/gi, '')
-                    .replace(/<p>\s*Date:\s*[^<]*<\/p>/gi, '')
-                    .replace(/<p>\s*Excerpt:\s*[^<]*<\/p>/gi, '')
-                    .replace(/<p>\s*Content:\s*<\/p>/gi, '')
-                    .replace(/<p>\s*FAQ:\s*<\/p>/gi, '');
-                
-                const faqRegex = /<[^>]+>\s*Frequently Asked Questions\s*<\/[^>]+>/gi;
-                const faqMatch = cleanHtml.match(faqRegex);
-                let faqArray = [];
-                
-                if (faqMatch) {
-                    const parts = cleanHtml.split(faqRegex);
-                    cleanHtml = parts[0].trim();
-                    
-                    const faqHtml = parts[1] || '';
-                    const paragraphs = faqHtml.match(/<p[^>]*>.*?<\/p>/gi) || [];
-                    
-                    let currentQuestion = '';
-                    let currentAnswer = '';
-                    
-                    for (const para of paragraphs) {
-                        const text = para.replace(/<[^>]+>/g, '').trim();
-                        
-                        if (text.startsWith('Q.')) {
-                            if (currentQuestion && currentAnswer) {
-                                faqArray.push({ 
-                                    question: currentQuestion.replace(/^Q\.\s*/i, '').trim(), 
-                                    answer: currentAnswer.replace(/^A\.\s*/i, '').trim() 
-                                });
-                            }
-                            currentQuestion = text;
-                            currentAnswer = '';
-                        } else if (text.startsWith('A.')) {
-                            currentAnswer = text;
-                        } else if (currentAnswer) {
-                            currentAnswer += ' ' + text;
-                        }
-                    }
-                    
-                    if (currentQuestion && currentAnswer) {
-                        faqArray.push({ 
-                            question: currentQuestion.replace(/^Q\.\s*/i, '').trim(), 
-                            answer: currentAnswer.replace(/^A\.\s*/i, '').trim() 
-                        });
-                    }
-                }
-                
-                cleanHtml = cleanHtml.trim();
-                
-                const blogSlug = title
-                    .toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9\s-]/g, '')
-                    .replace(/\s+/g, '-')
-                    .replace(/-+/g, '-')
-                    .replace(/^-+|-+$/g, '')
-                    .substring(0, 200) || 'blog';
-                
-                const config = GitHubConfig.load();
-                const ghPagesBase = config.username && config.repoName ? `https://${config.username}.github.io/${config.repoName}` : 'https://your-github-username.github.io/your-repo-name';
-                const featuredImageUrl = titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : '';
-                
-                const contentImageUrls = Array.from(contentImages).map(img => 
-                    `${ghPagesBase}/images/${blogSlug}/${img.name}`
-                );
-                
-                const blogData = {
-                    title: title,
-                    author: author,
-                    category: category,
-                    date: date,
-                    excerpt: excerpt,
-                    featured_image: featuredImageUrl,
-                    content_images: contentImageUrls,
-                    content: `<div style="font-family: 'Times New Roman', serif;">${cleanHtml}</div>`,
-                    faq: faqArray
-                };
-                
-                // Store the current blog data for JSON editor
-                localStorage.setItem('currentBlogData', JSON.stringify(blogData));
-                
-                let titleImageHtml = '';
-                if (titleImage) {
-                    const titleImageUrl = URL.createObjectURL(titleImage);
-                    const futureUrl = `${ghPagesBase}/images/${blogSlug}/${titleImage.name}`;
-                    titleImageHtml = `
-                        <div style="margin: 20px 0;">
-                            <img src="${titleImageUrl}" alt="Title Image" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
-                            <small style="color: #666; display: block; margin-top: 5px;">Will be hosted at: ${futureUrl}</small>
-                        </div>
-                    `;
-                }
-                
-                let contentImagesHtml = '';
-                if (contentImages.length > 0) {
-                    const imagesList = Array.from(contentImages).map(img => {
-                        const imgUrl = URL.createObjectURL(img);
-                        const futureUrl = `${ghPagesBase}/images/${blogSlug}/${img.name}`;
-                        return `
-                            <div style="margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 6px;">
-                                <img src="${imgUrl}" alt="${img.name}" style="width: 100%; border-radius: 4px;" />
-                                <small style="color: #666; display: block; margin-top: 5px;">
-                                    <strong>${img.name}</strong><br>
-                                    Will be hosted at: ${futureUrl}
-                                </small>
-                            </div>
-                        `;
-                    }).join('');
-                    
-                    contentImagesHtml = `
-                        <div style="margin: 30px 0; padding: 20px; background: #f0f7ff; border-left: 4px solid #667eea; border-radius: 4px;">
-                            <h3 style="margin-top: 0;">Content Images</h3>
-                            ${imagesList}
-                        </div>
-                    `;
-                }
-                
-                const jsonPreview = `
-                    <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
-                        <h3 style="margin-top: 0;">Generated JSON Data</h3>
-                        <p><strong>File:</strong> <code>blogs/${blogSlug}.json</code></p>
-                        <div style="background: #fff; border: 1px solid #e9ecef; border-radius: 4px; overflow: hidden;">
-                            <div style="background: #f8f9fa; padding: 8px 15px; border-bottom: 1px solid #e9ecef; font-family: 'Courier New', monospace; font-size: 12px; color: #6c757d;">
-                                blogs/${blogSlug}.json
-                            </div>
-                            <pre style="margin: 0; padding: 15px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4; overflow-x: auto; background: #fff; color: #212529;">${JSON.stringify(blogData, null, 2)}</pre>
-                        </div>
-                        <p style="margin-top: 10px; font-size: 12px; color: #6c757d;">
-                            This is the exact JSON that will be saved to your GitHub repository.
-                        </p>
-                    </div>
-                `;
-                
-                previewContent.innerHTML = `
-                    <h3>Blog Preview</h3>
-                    <div style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-                        <strong>Note:</strong> This is how your blog will appear on the frontend with GitHub Pages URLs
-                    </div>
-                    ${jsonPreview}
-                    <div class="preview-content" style="font-family: 'Times New Roman', serif; line-height: 1.6;">
-                        <h1 style="margin-bottom: 10px;">${title}</h1>
-                        <p><strong>File:</strong> ${blogFile.name}</p>
-                        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                        ${titleImageHtml}
-                        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
-                        <div style="font-family: 'Times New Roman', serif;">
-                            ${html}
-                        </div>
-                        ${contentImagesHtml}
-                    </div>
-                `;
-                
-                if (result.messages.length > 0) {
-                    console.log('Conversion warnings:', result.messages);
-                }
-            } catch (error) {
-                previewContent.innerHTML = `
-                    <h3>Blog Preview</h3>
-                    <div style="padding: 20px; color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px;">
-                        <strong>Error parsing DOCX file:</strong><br>
-                        ${error.message}
-                    </div>
-                `;
+
+            const selection = window.getSelection();
+            if (!selection || !selection.rangeCount) {
+                return;
             }
-        });
 
-        // JSON Editor functions
-        function loadBlogJson() {
-            const status = document.getElementById('jsonStatus');
-            const titleDisplay = document.getElementById('blogTitleDisplay');
-            const textarea = document.getElementById('jsonTextarea');
-            
+            const range = selection.getRangeAt(0);
+            if (!range.collapsed) {
+                return;
+            }
+
+            const listItem = findClosestElement(range.startContainer, 'li', event.currentTarget);
+            if (!listItem || !isEmptyListItem(listItem)) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const list = listItem.parentElement;
+            const paragraph = document.createElement('p');
+            paragraph.innerHTML = '<br>';
+            const followingList = list.cloneNode(false);
+
+            let sibling = listItem.nextElementSibling;
+            while (sibling) {
+                const nextSibling = sibling.nextElementSibling;
+                followingList.appendChild(sibling);
+                sibling = nextSibling;
+            }
+
+            listItem.remove();
+
+            if (list.children.length === 0) {
+                list.insertAdjacentElement('afterend', paragraph);
+                list.remove();
+            } else {
+                list.insertAdjacentElement('afterend', paragraph);
+            }
+
+            if (followingList.children.length) {
+                paragraph.insertAdjacentElement('afterend', followingList);
+            }
+
+            placeCaretAtStart(paragraph);
+            saveDraftFromEditor();
+        }
+
+        function hydrateFromStorage() {
+            const editedData = localStorage.getItem(EDITED_KEY);
+            const currentData = localStorage.getItem(CURRENT_KEY);
+            const source = editedData || currentData;
+            if (!source) return;
+
             try {
-                let jsonData = null;
-                let source = '';
-
-                const editedData = localStorage.getItem('editedBlogData');
-                if (editedData) {
-                    jsonData = JSON.parse(editedData);
-                    source = 'edited';
-                } else {
-                    // Check for current blog data
-                    const currentData = localStorage.getItem('currentBlogData');
-                    if (currentData) {
-                        jsonData = JSON.parse(currentData);
-                        source = 'current';
-                    } else {
-                        throw new Error('No blog uploaded.');
-                    }
-                }
-                
-                textarea.value = JSON.stringify(jsonData, null, 2);
-                titleDisplay.textContent = jsonData.title ? `Editing: ${jsonData.title}` : 'No title available';
-                
-                if (source === 'edited') {
-                    status.textContent = '✓ Loaded edited blog JSON';
-                    status.className = 'status-message success';
-                } else if (source === 'current') {
-                    status.textContent = '✓ Loaded blog JSON from uploaded file';
-                    status.className = 'status-message info';
-                }
-            } catch (error) {
-                status.textContent = '✗ ' + error.message;
-                status.className = 'status-message error';
-                titleDisplay.textContent = '';
-                textarea.value = '';
+                state.draft = JSON.parse(source);
+                updateDraftValidation(state.draft);
+                loadDraftIntoEditor(state.draft);
+                setStatusMessage('globalStatus', 'Loaded saved draft from localStorage.', 'info');
+            } catch (_error) {
+                localStorage.removeItem(EDITED_KEY);
+                localStorage.removeItem(CURRENT_KEY);
             }
         }
 
-        document.getElementById('jsonTextarea').addEventListener('input', () => {
-            const textarea = document.getElementById('jsonTextarea');
-            const status = document.getElementById('jsonStatus');
-            
-            try {
-                const jsonData = JSON.parse(textarea.value);
-                localStorage.setItem('editedBlogData', JSON.stringify(jsonData));
-                status.textContent = '✓ Changes auto-saved';
-                status.className = 'status-message success';
+        function init() {
+            initTabs();
+            initFileInputs();
+            initEditorBindings();
+            initJsonEditor();
+            populateGitHubConfigForm();
+            renderFaqEditorRows([]);
+            updateUploadButtonsState();
+            hydrateFromStorage();
+        }
 
-                const titleDisplay = document.getElementById('blogTitleDisplay');
-                titleDisplay.textContent = jsonData.title ? `Editing: ${jsonData.title}` : 'No title available';
-            } catch (error) {
-                status.textContent = '⚠️ Invalid JSON - changes not saved';
-                status.className = 'status-message error';
-            }
-        });
-
-        document.getElementById('validateJsonBtn').addEventListener('click', () => {
-            const status = document.getElementById('jsonStatus');
-            const text = document.getElementById('jsonTextarea').value;
-            try {
-                JSON.parse(text);
-                status.textContent = '✓ JSON is valid';
-                status.className = 'status-message success';
-            } catch (error) {
-                status.textContent = '✗ JSON is invalid: ' + error.message;
-                status.className = 'status-message error';
-            }
-        });
-
-        document.getElementById('downloadJsonBtn').addEventListener('click', () => {
-            const status = document.getElementById('jsonStatus');
-            const text = document.getElementById('jsonTextarea').value;
-            try {
-                JSON.parse(text); // Validate first
-                const blob = new Blob([text], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'api.json';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                status.textContent = '✓ JSON downloaded successfully';
-                status.className = 'status-message success';
-            } catch (error) {
-                status.textContent = '✗ Cannot download invalid JSON: ' + error.message;
-                status.className = 'status-message error';
-            }
-        });
-
-        document.getElementById('clearEditsBtn').addEventListener('click', () => {
-            if (confirm('Are you sure you want to clear all edits? This will fall back to DOCX parsing on upload.')) {
-                localStorage.removeItem('editedBlogData');
-                loadBlogJson();  // Reload to show original data
-                setStatusMessage('jsonStatus', 'Edits cleared. Upload will use DOCX parsing.', 'info');
-            }
-        });
-
-        populateGitHubConfigForm();
-        initFileInputs();
-        updateUploadButtonsState();
+        init();
     </script>
 </body>
 </html>
