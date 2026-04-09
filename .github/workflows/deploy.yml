@@ -4,11 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'blogs/**'
-      - 'images/**'
-      - 'export_data.py'
-      - '.github/workflows/deploy.yml'
 
 jobs:
   deploy:
