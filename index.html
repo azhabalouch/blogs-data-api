@@ -98,6 +98,11 @@
                             <div class="form-group"><label for="editCategory">Category</label><input type="text" id="editCategory"></div>
                             <div class="form-group"><label for="editDate">Date (MM/DD/YYYY)</label><input type="text" id="editDate" placeholder="04/09/2026"></div>
                             <div class="form-group"><label for="editExcerpt">Excerpt</label><textarea id="editExcerpt" rows="4"></textarea></div>
+                            <div class="form-group">
+                                <label for="editCaptions">Image Captions</label>
+                                <textarea id="editCaptions" rows="4" placeholder="First caption for title image&#10;Second caption for first content image&#10;Third caption for second content image"></textarea>
+                                <div class="muted">Add one caption per line. The first line is for the title image, then content images in upload order.</div>
+                            </div>
                         </div>
 
                         <div class="panel">
@@ -583,6 +588,7 @@
                 excerpt: excerptMatch.found ? excerpt : '',
                 featured_image: titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : '',
                 content_images: Array.from(contentImages || []).map(img => `${ghPagesBase}/images/${blogSlug}/${img.name}`),
+                captions: '',
                 content: contentHtml,
                 tags,
                 faq: hasFaqHeading ? faqArray : [],
@@ -793,6 +799,7 @@
             const category = document.getElementById('editCategory').value.trim();
             const date = document.getElementById('editDate').value.trim();
             const excerpt = document.getElementById('editExcerpt').value.trim();
+            const captions = document.getElementById('editCaptions').value.trim();
             const content = sanitizeEditorHtml(document.getElementById('contentEditor').innerHTML.trim());
             const existing = state.draft || {};
             const tags = Array.isArray(existing.tags) ? existing.tags : [];
@@ -816,6 +823,7 @@
                 content_images: contentImages.length
                     ? contentImages.map(img => `${ghPagesBase}/images/${blogSlug}/${img.name}`)
                     : (existing.content_images || []),
+                captions,
                 content,
                 tags,
                 faq
@@ -838,6 +846,7 @@
             document.getElementById('editCategory').value = draft.category || '';
             document.getElementById('editDate').value = draft.date || '';
             document.getElementById('editExcerpt').value = draft.excerpt || '';
+            document.getElementById('editCaptions').value = draft.captions || '';
             document.getElementById('contentEditor').innerHTML = draft.content || '';
             renderFaqEditorRows(draft.faq || []);
             state.syncingEditor = false;
@@ -1022,6 +1031,7 @@
             document.getElementById('editCategory').value = '';
             document.getElementById('editDate').value = '';
             document.getElementById('editExcerpt').value = '';
+            document.getElementById('editCaptions').value = '';
             document.getElementById('contentEditor').innerHTML = '';
             document.getElementById('faqEditorList').innerHTML = '';
             document.getElementById('jsonTextarea').value = '';
@@ -1130,7 +1140,7 @@
         }
 
         function initEditorBindings() {
-            ['editTitle', 'editAuthor', 'editCategory', 'editDate', 'editExcerpt'].forEach(id => {
+            ['editTitle', 'editAuthor', 'editCategory', 'editDate', 'editExcerpt', 'editCaptions'].forEach(id => {
                 document.getElementById(id).addEventListener('input', saveDraftFromEditor);
             });
             document.getElementById('contentEditor').addEventListener('input', saveDraftFromEditor);
