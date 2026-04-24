@@ -93,11 +93,28 @@
                         <div class="panel">
                             <h2>Post Metadata</h2>
                             <div id="editorStatus" class="status-message"></div>
-                            <div class="form-group"><label for="editTitle">Title</label><input type="text" id="editTitle"></div>
+                            <div id="seoStatus" class="status-message" style="margin-top: 10px; display: none;"></div>
+                            <div class="form-group">
+                                <label for="editTitle" style="display: flex; justify-content: space-between;">
+                                    Title 
+                                    <span id="titleCharCount" style="font-weight: normal; font-size: 0.85em;" class="muted">0 chars</span>
+                                </label>
+                                <input type="text" id="editTitle">
+                            </div>
                             <div class="form-group"><label for="editAuthor">Author</label><input type="text" id="editAuthor"></div>
                             <div class="form-group"><label for="editCategory">Category</label><input type="text" id="editCategory"></div>
                             <div class="form-group"><label for="editDate">Date (MM/DD/YYYY)</label><input type="text" id="editDate" placeholder="04/09/2026"></div>
-                            <div class="form-group"><label for="editExcerpt">Excerpt</label><textarea id="editExcerpt" rows="4"></textarea></div>
+                            <div class="form-group">
+                                <label for="editExcerpt" style="display: flex; justify-content: space-between;">
+                                    Excerpt
+                                    <span id="excerptCharCount" style="font-weight: normal; font-size: 0.85em;" class="muted">0 chars</span>
+                                </label>
+                                <textarea id="editExcerpt" rows="4"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="editKeywords">Keywords (comma separated)</label>
+                                <input type="text" id="editKeywords" placeholder="blogging, SEO strategies, tech">
+                            </div>
                             <div class="form-group">
                                 <label for="editCaptions">Image Captions</label>
                                 <textarea id="editCaptions" rows="4" placeholder="First caption for title image&#10;Second caption for first content image&#10;Third caption for second content image"></textarea>
@@ -372,13 +389,13 @@
                 : [];
             const faqBlocks = faqIndex >= 0 ? blocks.slice(faqIndex + 1) : [];
 
-            if (articleBlocks.length && isTitleHeadingBlock(articleBlocks[0], title)) {
+            if (articleBlocks.length && /^H[1-6]$/i.test(articleBlocks[0].tagName)) {
                 articleBlocks.shift();
             }
 
             while (articleBlocks.length) {
                 const firstText = normalizeText(articleBlocks[0].textContent);
-                if (/^(title|author|category|date|excerpt|content)\s*:/i.test(firstText)) {
+                if (/^(title|author|category|date|excerpt|keywords|content)\s*:/i.test(firstText)) {
                     articleBlocks.shift();
                     continue;
                 }
@@ -530,6 +547,7 @@
                 .replace(/<p>\s*Category:\s*[^<]*<\/p>/gi, '')
                 .replace(/<p>\s*Date:\s*[^<]*<\/p>/gi, '')
                 .replace(/<p>\s*Excerpt:\s*[^<]*<\/p>/gi, '')
+                .replace(/<p>\s*Keywords:\s*[^<]*<\/p>/gi, '')
                 .replace(/<p>\s*Content:\s*<\/p>/gi, '')
                 .replace(/<p>\s*FAQ:\s*<\/p>/gi, '');
         }
@@ -545,18 +563,27 @@
             const blocks = Array.from(tempDiv.children);
             const rawText = tempDiv.textContent || '';
 
-            const titleMatch = extractStructuredFieldFromText(rawText, 'Title', ['Author', 'Category', 'Date', 'Excerpt', 'Content', 'Frequently Asked Questions', 'FAQ', 'Tags']);
-            const authorMatch = extractStructuredFieldFromText(rawText, 'Author', ['Category', 'Date', 'Excerpt', 'Content', 'Frequently Asked Questions', 'FAQ', 'Tags']);
-            const categoryMatch = extractStructuredFieldFromText(rawText, 'Category', ['Date', 'Excerpt', 'Content', 'Frequently Asked Questions', 'FAQ', 'Tags']);
-            const dateMatch = extractStructuredFieldFromText(rawText, 'Date', ['Excerpt', 'Content', 'Frequently Asked Questions', 'FAQ', 'Tags']);
-            const excerptMatch = extractStructuredFieldFromText(rawText, 'Excerpt', ['Content', 'Frequently Asked Questions', 'FAQ', 'Tags']);
+            const nextLabels = ['Author', 'Category', 'Date', 'Excerpt', 'Keywords', 'Content', 'Frequently Asked Questions', 'FAQ', 'Tags'];
+            const titleMatch = extractStructuredFieldFromText(rawText, 'Title', nextLabels);
+            const authorMatch = extractStructuredFieldFromText(rawText, 'Author', nextLabels);
+            const categoryMatch = extractStructuredFieldFromText(rawText, 'Category', nextLabels);
+            const dateMatch = extractStructuredFieldFromText(rawText, 'Date', nextLabels);
+            const excerptMatch = extractStructuredFieldFromText(rawText, 'Excerpt', nextLabels);
+            let keywordsMatch = extractStructuredFieldFromText(rawText, 'Keywords', nextLabels);
             const contentMatch = extractStructuredFieldFromText(rawText, 'Content', ['Frequently Asked Questions', 'FAQ', 'Tags']);
 
-            const title = titleMatch.value || getBlockText(tempDiv.querySelector('h1')) || '';
+            let title = titleMatch.value || getBlockText(tempDiv.querySelector('h1')) || '';
+            // Fix Title Formatting
+            if (title.includes(' - ')) {
+                title = title.split(' - ')[0].trim();
+            }
+            
             const author = authorMatch.value;
             const category = categoryMatch.value;
             const date = dateMatch.value.replace(/\\/g, '/');
             const excerpt = excerptMatch.value;
+            const keywordsInput = keywordsMatch.value;
+            const keywords = keywordsInput ? keywordsInput.split(',').map(k => k.trim()).filter(Boolean) : [];
             const contentMarkerPresent = /(?:^|\s)Content\s*:/i.test(rawText) || /<p>\s*Content:\s*<\/p>/i.test(cleanedHtml);
 
             const cleanHtml = removeMetaParagraphs(cleanedHtml);
@@ -571,6 +598,7 @@
                 category: categoryMatch.found ? category : '',
                 date: dateMatch.found ? date : '',
                 excerpt: excerptMatch.found ? excerpt : '',
+                keywords,
                 content: contentHtml,
                 faq: hasFaqHeading ? faqArray : []
             });
@@ -580,12 +608,13 @@
                 ? `https://${config.username}.github.io/${config.repoName}`
                 : 'https://your-github-username.github.io/your-repo-name';
 
-            return {
+            const draftObject = {
                 title: titleMatch.found ? title : '',
                 author: authorMatch.found ? author : '',
                 category: categoryMatch.found ? category : '',
                 date: dateMatch.found ? date : '',
                 excerpt: excerptMatch.found ? excerpt : '',
+                keywords,
                 featured_image: titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : '',
                 content_images: Array.from(contentImages || []).map(img => `${ghPagesBase}/images/${blogSlug}/${img.name}`),
                 captions: '',
@@ -594,6 +623,10 @@
                 faq: hasFaqHeading ? faqArray : [],
                 validation
             };
+            
+            draftObject.seo_schema = generateSchema(draftObject);
+
+            return draftObject;
         }
 
         class GitHubConfig {
@@ -768,20 +801,116 @@
 
             if (!items.length) {
                 list.innerHTML = '<div class="faq-editor-placeholder">No FAQ pairs were detected. Add a "Frequently asked questions" heading with Q./A. paragraphs in the source document.</div>';
+                // Add a button to add new FAQ item
+                const addBtn = document.createElement('button');
+                addBtn.className = 'btn btn-secondary btn-small';
+                addBtn.style.marginTop = '10px';
+                addBtn.textContent = 'Add FAQ';
+                addBtn.type = 'button';
+                addBtn.onclick = () => {
+                    const newFaq = Array.isArray(state.draft.faq) ? state.draft.faq : [];
+                    newFaq.push({ question: 'New Question?', answer: 'New Answer' });
+                    state.draft.faq = newFaq;
+                    renderFaqEditorRows(newFaq);
+                    saveDraftFromEditor();
+                };
+                list.appendChild(addBtn);
                 return;
             }
 
             items.forEach((item, index) => {
                 const row = document.createElement('div');
-                row.className = 'faq-editor-item readonly';
-                row.innerHTML = `
-                    <div class="faq-item-label">Q${index + 1}</div>
-                    <div class="faq-item-question">${escapeHtml(item.question)}</div>
-                    <div class="faq-item-label">A${index + 1}</div>
-                    <div class="faq-item-answer">${escapeHtml(item.answer)}</div>
-                `;
+                row.className = 'faq-editor-item';
+                
+                const qLabel = document.createElement('div');
+                qLabel.className = 'faq-item-label';
+                qLabel.textContent = `Q${index + 1}`;
+                
+                const qInput = document.createElement('input');
+                qInput.type = 'text';
+                qInput.className = 'faq-item-question editable';
+                qInput.value = item.question;
+                qInput.oninput = (e) => {
+                    state.draft.faq[index].question = e.target.value;
+                    saveDraftFromEditor();
+                };
+                
+                const aLabel = document.createElement('div');
+                aLabel.className = 'faq-item-label';
+                aLabel.textContent = `A${index + 1}`;
+                
+                const aInput = document.createElement('textarea');
+                aInput.className = 'faq-item-answer editable';
+                aInput.value = item.answer;
+                aInput.rows = 3;
+                aInput.oninput = (e) => {
+                    state.draft.faq[index].answer = e.target.value;
+                    saveDraftFromEditor();
+                };
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-danger btn-small';
+                delBtn.textContent = 'Delete';
+                delBtn.type = 'button';
+                delBtn.onclick = () => {
+                    state.draft.faq.splice(index, 1);
+                    renderFaqEditorRows(state.draft.faq);
+                    saveDraftFromEditor();
+                };
+                
+                row.appendChild(qLabel);
+                row.appendChild(qInput);
+                row.appendChild(aLabel);
+                row.appendChild(aInput);
+                row.appendChild(delBtn);
+                
                 list.appendChild(row);
             });
+            
+            const addBtn = document.createElement('button');
+            addBtn.className = 'btn btn-secondary btn-small';
+            addBtn.style.marginTop = '10px';
+            addBtn.textContent = 'New Question';
+            addBtn.type = 'button';
+            addBtn.onclick = () => {
+                state.draft.faq.push({ question: 'New Question?', answer: 'New Answer' });
+                renderFaqEditorRows(state.draft.faq);
+                saveDraftFromEditor();
+            };
+            list.appendChild(addBtn);
+        }
+
+        function generateSchema(draft) {
+            const articleSchema = {
+                "@context": "https://schema.org",
+                "@type": "Article",
+                "headline": draft.title,
+                "author": {
+                    "@type": "Person",
+                    "name": draft.author || "Unknown"
+                },
+                "datePublished": draft.date || new Date().toISOString().split('T')[0],
+                "description": draft.excerpt,
+                "image": draft.featured_image || ""
+            };
+
+            const faqSchema = draft.faq && draft.faq.length > 0 ? {
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": draft.faq.map(item => ({
+                    "@type": "Question",
+                    "name": item.question,
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": item.answer
+                    }
+                }))
+            } : null;
+
+            return {
+                article: articleSchema,
+                faq: faqSchema
+            };
         }
 
         function sanitizeEditorHtml(html) {
@@ -789,6 +918,52 @@
             const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
             doc.querySelectorAll('script, style').forEach(node => node.remove());
             return doc.body.firstElementChild ? doc.body.firstElementChild.innerHTML : html;
+        }
+
+        function checkSEO(draft) {
+            const seoStatusEl = document.getElementById('seoStatus');
+            if (!seoStatusEl || !draft) return;
+            
+            const warnings = [];
+            const titleLength = (draft.title || '').length;
+            const excerptLength = (draft.excerpt || '').length;
+            
+            const titleCountEl = document.getElementById('titleCharCount');
+            if (titleCountEl) titleCountEl.textContent = `${titleLength} chars`;
+            const excerptCountEl = document.getElementById('excerptCharCount');
+            if (excerptCountEl) excerptCountEl.textContent = `${excerptLength} chars`;
+
+            if (titleLength === 0) {
+                warnings.push("Title is missing.");
+            } else if (titleLength < 30 || titleLength > 60) {
+                warnings.push(`Title length (${titleLength} chars) should ideally be between 30 and 60 characters.`);
+            }
+            
+            if (excerptLength === 0) {
+                warnings.push("Excerpt is missing.");
+            } else if (excerptLength < 120 || excerptLength > 160) {
+                warnings.push(`Excerpt length (${excerptLength} chars) should ideally be between 120 and 160 characters.`);
+            }
+            
+            const contentContainer = document.createElement('div');
+            contentContainer.innerHTML = draft.content || '';
+            const wordCount = (contentContainer.textContent || '').trim().split(/\s+/).filter(Boolean).length;
+            if (wordCount < 300) {
+                warnings.push(`Word count (${wordCount}) is low. Aim for at least 300 words.`);
+            }
+            
+            if (!draft.keywords || draft.keywords.length === 0) {
+                warnings.push("No keywords specified.");
+            }
+            
+            seoStatusEl.style.display = 'block';
+            if (warnings.length > 0) {
+                seoStatusEl.innerHTML = `<strong>SEO Suggestions:</strong><ul style="margin-bottom: 0; padding-left: 20px;"><li>${warnings.join('</li><li>')}</li></ul>`;
+                seoStatusEl.className = 'status-message warning';
+            } else {
+                seoStatusEl.innerHTML = `<strong>SEO Check:</strong> Looks good!`;
+                seoStatusEl.className = 'status-message success';
+            }
         }
 
         function saveDraftFromEditor() {
@@ -799,6 +974,8 @@
             const category = document.getElementById('editCategory').value.trim();
             const date = document.getElementById('editDate').value.trim();
             const excerpt = document.getElementById('editExcerpt').value.trim();
+            const keywordsInput = document.getElementById('editKeywords').value.trim();
+            const keywords = keywordsInput ? keywordsInput.split(',').map(k => k.trim()).filter(Boolean) : [];
             const captions = document.getElementById('editCaptions').value.trim();
             const content = sanitizeEditorHtml(document.getElementById('contentEditor').innerHTML.trim());
             const existing = state.draft || {};
@@ -819,6 +996,7 @@
                 category,
                 date,
                 excerpt,
+                keywords,
                 featured_image: titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : (existing.featured_image || ''),
                 content_images: contentImages.length
                     ? contentImages.map(img => `${ghPagesBase}/images/${blogSlug}/${img.name}`)
@@ -828,12 +1006,15 @@
                 tags,
                 faq
             };
+            
+            state.draft.seo_schema = generateSchema(state.draft);
 
             updateDraftValidation(state.draft);
 
             persistDraft();
             renderPreview(state.draft);
             renderValidationStatus(state.draft.validation);
+            checkSEO(state.draft);
             setStatusMessage('editorStatus', state.draft.validation.isValid ? 'Draft auto-saved.' : `Draft saved with missing sections: ${state.draft.validation.missingSections.join(', ')}.`, state.draft.validation.isValid ? 'success' : 'warning');
             updateUploadButtonsState();
         }
@@ -846,6 +1027,7 @@
             document.getElementById('editCategory').value = draft.category || '';
             document.getElementById('editDate').value = draft.date || '';
             document.getElementById('editExcerpt').value = draft.excerpt || '';
+            document.getElementById('editKeywords').value = Array.isArray(draft.keywords) ? draft.keywords.join(', ') : draft.keywords || '';
             document.getElementById('editCaptions').value = draft.captions || '';
             document.getElementById('contentEditor').innerHTML = draft.content || '';
             renderFaqEditorRows(draft.faq || []);
@@ -854,6 +1036,7 @@
             updateJsonFromDraft();
             renderPreview(draft);
             renderValidationStatus(draft.validation);
+            checkSEO(draft);
             setStatusMessage('editorStatus', draft.validation.isValid ? 'Draft loaded.' : `Draft loaded with missing sections: ${draft.validation.missingSections.join(', ')}.`, draft.validation.isValid ? 'info' : 'warning');
             updateUploadButtonsState();
         }
@@ -885,14 +1068,14 @@
                 const midIndex = Math.floor(paragraphs.length / 2);
                 const imageContainer = document.createElement('figure');
                 imageContainer.className = 'content-inline-image';
-                imageContainer.innerHTML = `<img src="${post.content_images[0]}" alt="${escapeHtml(post.title)} image 1">`;
+                imageContainer.innerHTML = `<img src="${post.content_images[0]}" alt="${escapeHtml(post.title)} image 1" loading="lazy">`;
                 paragraphs[midIndex].insertAdjacentElement('afterend', imageContainer);
             }
 
             content = tempWrapper.innerHTML;
 
             if (post.content_images.length >= 2) {
-                content += `<figure class="content-inline-image"><img src="${post.content_images[1]}" alt="${escapeHtml(post.title)} image 2"></figure>`;
+                content += `<figure class="content-inline-image"><img src="${post.content_images[1]}" alt="${escapeHtml(post.title)} image 2" loading="lazy"></figure>`;
             }
 
             return content;
@@ -910,7 +1093,7 @@
             contentHtml = injectContentImages(contentHtml, post);
 
             const featuredImageHtml = post.featured_image
-                ? `<div class="article-featured-image"><img src="${post.featured_image}" alt="${escapeHtml(post.title)}"></div>`
+                ? `<div class="article-featured-image"><img src="${post.featured_image}" alt="${escapeHtml(post.title)}" loading="lazy"></div>`
                 : '';
 
             const faqItems = post.faq || [];
@@ -1031,11 +1214,14 @@
             document.getElementById('editCategory').value = '';
             document.getElementById('editDate').value = '';
             document.getElementById('editExcerpt').value = '';
+            document.getElementById('editKeywords').value = '';
             document.getElementById('editCaptions').value = '';
             document.getElementById('contentEditor').innerHTML = '';
             document.getElementById('faqEditorList').innerHTML = '';
             document.getElementById('jsonTextarea').value = '';
             document.getElementById('blogTitleDisplay').textContent = '';
+            const seoStatusEl = document.getElementById('seoStatus');
+            if (seoStatusEl) seoStatusEl.style.display = 'none';
             updateUploadButtonsState();
             setStatusMessage('globalStatus', message, 'info');
         }
@@ -1140,7 +1326,7 @@
         }
 
         function initEditorBindings() {
-            ['editTitle', 'editAuthor', 'editCategory', 'editDate', 'editExcerpt', 'editCaptions'].forEach(id => {
+            ['editTitle', 'editAuthor', 'editCategory', 'editDate', 'editExcerpt', 'editKeywords', 'editCaptions'].forEach(id => {
                 document.getElementById(id).addEventListener('input', saveDraftFromEditor);
             });
             document.getElementById('contentEditor').addEventListener('input', saveDraftFromEditor);
