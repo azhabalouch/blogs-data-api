@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Zawiyar Ahmad",
+    "bio": "I'm an AI student and developer navigating the wild world of machine learning and NLP.",
+    "location": "Pakistan",
+    "details": "Hey there! I'm Zawiyar. I'm currently navigating through the wild world of AI and machine learning here in Pakistan. When I'm not drowning in research papers, I'm usually tweaking predictive models or trying to get language models to actually understand our regional context. It's a lot of trial, error, and coffee, but building ML pipelines from scratch is incredibly rewarding. I'm just a university student trying to push the boundaries of what AI can do for our local tech scene.",
+    "image": "https://azhabalouch.github.io/blogs-data-api/authors/zawiyar-ahmad.jpeg"
+  },
+  {
+    "name": "Muaaz Hassan",
+    "bio": "I'm a computer vision enthusiast and AI scholar trying to build transparent, ethical ML frameworks.",
+    "location": "Pakistan",
+    "details": "Hi, I'm Muaaz! I'm an AI student with a massive caffeine dependency and a love for computer vision. Based in Pakistan, I spend most of my days reading up on generative models and trying to figure out how to make AI more fair and transparent. I really believe AI can do a lot of good, especially for developing economies. Between university assignments and late-night coding sessions with PyTorch, I'm just trying to build tech that actually matters and helps the community.",
+    "image": "https://azhabalouch.github.io/blogs-data-api/authors/muaz-hassan.jpeg"
+  },
+  {
+    "name": "Shamikh Abdullah",
+    "bio": "I'm studying data science and deep learning, always testing my skills in global hackathons.",
+    "location": "Pakistan",
+    "details": "Hello! I'm Shamikh. I'm currently studying data science and AI architectures in Pakistan. My brain is basically wired for deep learning and predictive analytics at this point. University life keeps me super busy, especially since my projects involve reinforcement learning\u2014which usually means watching my models fail a hundred times before they finally get it right. I love jumping into global hackathons whenever I can, just to see how my code holds up against real-world, messy problems.",
+    "image": "https://azhabalouch.github.io/blogs-data-api/authors/shamikh-abdullah.jpeg"
+  },
+  {
+    "name": "Hira Sultan",
+    "bio": "I'm obsessed with NLP and conversational AI, building smart systems that make life easier.",
+    "location": "Pakistan",
+    "details": "Hey, I'm Hira! I'm an AI student from Pakistan, totally obsessed with how humans and computers talk to each other. Mostly, I'm geeking out over natural language processing and transformer models. I'm really passionate about making education and everyday workflows easier through AI chatbots and smart agents. My day-to-day usually involves building prototypes, breaking them, and figuring out how to make conversational AI feel less like an awkward robot and more like a helpful friend.",
+    "image": "https://azhabalouch.github.io/blogs-data-api/authors/hira-sultan.jpg"
+  },
+  {
+    "name": "Sarah Ali",
+    "bio": "I'm an AI student heavily focused on tech ethics, bias mitigation, and open-source development.",
+    "location": "Pakistan",
+    "details": "Hi everyone, I'm Sarah! I'm studying artificial intelligence here in Pakistan, and I'm really passionate about the ethical side of tech. It's not just about building cool predictive models; it's about making sure they don't carry bad biases or leave people behind. I spend a lot of my time looking at demographic data, figuring out how to make AI fairer, and exploring how tech can help with environmental sustainability. I love contributing to open-source projects whenever I have free time between classes!",
+    "image": "https://azhabalouch.github.io/blogs-data-api/authors/sarah-ali.jpeg"
+  }
+]
