@@ -640,8 +640,6 @@
                 faq: hasFaqHeading ? faqArray : [],
                 validation
             };
-            
-            draftObject.seo_schema = generateSchema(draftObject);
 
             return draftObject;
         }
@@ -1023,8 +1021,6 @@
                 tags,
                 faq
             };
-            
-            state.draft.seo_schema = generateSchema(state.draft);
 
             updateDraftValidation(state.draft);
 
