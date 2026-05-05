@@ -632,8 +632,8 @@
                 date: dateMatch.found ? date : '',
                 excerpt: excerptMatch.found ? excerpt : '',
                 keywords,
-                featured_image: titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : '',
-                content_images: Array.from(contentImages || []).map(img => `${ghPagesBase}/images/${blogSlug}/${img.name}`),
+                featured_image: titleImage ? `/images/${blogSlug}/${titleImage.name}` : '',
+                content_images: Array.from(contentImages || []).map(img => `/images/${blogSlug}/${img.name}`),
                 captions: '',
                 content: contentHtml,
                 tags,
@@ -1014,9 +1014,9 @@
                 date,
                 excerpt,
                 keywords,
-                featured_image: titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : (existing.featured_image || ''),
+                featured_image: titleImage ? `/images/${blogSlug}/${titleImage.name}` : (existing.featured_image || ''),
                 content_images: contentImages.length
-                    ? contentImages.map(img => `${ghPagesBase}/images/${blogSlug}/${img.name}`)
+                    ? contentImages.map(img => `/images/${blogSlug}/${img.name}`)
                     : (existing.content_images || []),
                 captions,
                 content,
