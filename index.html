@@ -621,9 +621,6 @@
             });
 
             const blogSlug = computeBlogSlug(title);
-            const ghPagesBase = config.username && config.repoName
-                ? `https://${config.username}.github.io/${config.repoName}`
-                : 'https://your-github-username.github.io/your-repo-name';
 
             const draftObject = {
                 title: titleMatch.found ? title : '',
@@ -634,7 +631,8 @@
                 keywords,
                 featured_image: titleImage ? `/images/${blogSlug}/${titleImage.name}` : '',
                 content_images: Array.from(contentImages || []).map(img => `/images/${blogSlug}/${img.name}`),
-                captions: '',
+                    featured_image: titleImage ? `/images/${blogSlug}/${titleImage.name}` : '',
+                    content_images: Array.from(contentImages || []).map(img => `/images/${blogSlug}/${img.name}`),
                 content: contentHtml,
                 tags,
                 faq: hasFaqHeading ? faqArray : [],
@@ -998,9 +996,6 @@
             const faq = Array.isArray(existing.faq) ? existing.faq : [];
             const blogSlug = computeBlogSlug(title);
             const config = GitHubConfig.load();
-            const ghPagesBase = config.username && config.repoName
-                ? `https://${config.username}.github.io/${config.repoName}`
-                : 'https://your-github-username.github.io/your-repo-name';
 
             const titleImage = document.getElementById('titleImage').files[0];
             const contentImages = Array.from(document.getElementById('contentImages').files);
@@ -1012,10 +1007,10 @@
                 date,
                 excerpt,
                 keywords,
-                featured_image: titleImage ? `/images/${blogSlug}/${titleImage.name}` : (existing.featured_image || ''),
+                featured_image: titleImage ? `/images/${blogSlug}/${titleImage.name}` : normalizeStoredImagePath(existing.featured_image || ''),
                 content_images: contentImages.length
                     ? contentImages.map(img => `/images/${blogSlug}/${img.name}`)
-                    : (existing.content_images || []),
+                    : (existing.content_images || []).map(url => normalizeStoredImagePath(url)),
                 captions,
                 content,
                 tags,
@@ -1065,6 +1060,27 @@
             const div = document.createElement('div');
             div.textContent = text || '';
             return div.innerHTML;
+        }
+
+        function normalizeStoredImagePath(url) {
+            if (!url) {
+                return '';
+            }
+
+            if (url.startsWith('/images/')) {
+                return url;
+            }
+
+            if (url.startsWith('images/')) {
+                return `/${url}`;
+            }
+
+            if (/^https?:\/\//i.test(url)) {
+                const match = url.match(/\/images\/.+$/i);
+                return match ? match[0] : url;
+            }
+
+            return url;
         }
 
         function injectContentImages(contentHtml, post) {
@@ -1535,12 +1551,16 @@
             }
 
             const blogSlug = computeBlogSlug(blogData.title);
-            const ghPagesBase = `https://${config.username}.github.io/${config.repoName}`;
 
             if (!useEditedJson || titleImage || contentImages.length > 0) {
-                blogData.featured_image = titleImage ? `${ghPagesBase}/images/${blogSlug}/${titleImage.name}` : blogData.featured_image;
-                blogData.content_images = Array.from(contentImages).map(img => `${ghPagesBase}/images/${blogSlug}/${img.name}`);
+                blogData.featured_image = titleImage ? `/images/${blogSlug}/${titleImage.name}` : blogData.featured_image;
+                blogData.content_images = Array.from(contentImages).map(img => `/images/${blogSlug}/${img.name}`);
             }
+
+            blogData.featured_image = normalizeStoredImagePath(blogData.featured_image || '');
+            blogData.content_images = Array.isArray(blogData.content_images)
+                ? blogData.content_images.map(url => normalizeStoredImagePath(url))
+                : [];
 
             const ref = await githubRequest(`${apiBase}/git/refs/heads/${branch}`, { headers: authHeaders });
             const headCommitSha = ref.object.sha;

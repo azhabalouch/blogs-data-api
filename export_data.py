@@ -39,6 +39,15 @@ class BlogAggregator:
                     print(f"Skipping {blog_slug}: Missing required fields")
                     continue
 
+                normalized_blog_data = self._normalize_blog_assets(blog_data)
+                if normalized_blog_data != blog_data:
+                    with open(json_file, 'w', encoding='utf-8') as f:
+                        json.dump(normalized_blog_data,
+                                  f,
+                                  indent=2,
+                                  ensure_ascii=False)
+                    blog_data = normalized_blog_data
+
                 if blog_slug in existing_slugs or blog_data.get(
                         'id') in existing_ids:
                     print(f"Already processed: {blog_slug}")
@@ -120,13 +129,44 @@ class BlogAggregator:
             and str(item.get('answer', '')).strip() for item in faq)
 
     def _save_api(self, blogs: List[Dict]):
-        api_data = {"blogs": blogs}
+        api_data = {
+            "blogs": [self._normalize_blog_assets(blog) for blog in blogs]
+        }
 
         with open(self.output_file, 'w', encoding='utf-8') as f:
             json.dump(api_data, f, indent=2, ensure_ascii=False)
 
         print(f"\n✓ API saved to {self.output_file}")
         print(f"Total blogs: {len(blogs)}")
+
+    def _normalize_url(self, url: str) -> str:
+        if not url:
+            return url
+
+        if url.startswith("http://") or url.startswith("https://"):
+            image_index = url.find("/images/")
+            return url[image_index:] if image_index != -1 else url
+
+        if url.startswith("/images/"):
+            return url
+
+        if url.startswith("images/"):
+            return f"/{url}"
+
+        return url
+
+    def _normalize_blog_assets(self, blog: Dict) -> Dict:
+        normalized = dict(blog)
+        normalized["featured_image"] = self._normalize_url(
+            normalized.get("featured_image", ""))
+
+        content_images = normalized.get("content_images", [])
+        if isinstance(content_images, list):
+            normalized["content_images"] = [
+                self._normalize_url(image) for image in content_images
+            ]
+
+        return normalized
 
 
 def main():
